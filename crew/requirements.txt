@@ -1,0 +1,26 @@
+# --- Core ---
+crewai>=0.80.0
+crewai-tools>=0.20.0
+
+# --- Web framework ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.9.0
+python-multipart>=0.0.12
+
+# --- LLM via OpenRouter (OpenAI-compatible) ---
+litellm>=1.50.0
+openai>=1.50.0
+
+# --- Document/media processing ---
+pypdf>=5.0.0
+pdfplumber>=0.11.0
+pillow>=11.0.0
+beautifulsoup4>=4.12.0
+httpx>=0.27.0
+requests>=2.32.0
+
+# --- Utils ---
+python-dotenv>=1.0.0
+loguru>=0.7.0
+tenacity>=9.0.0
