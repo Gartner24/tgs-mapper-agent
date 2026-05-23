@@ -2,9 +2,10 @@
 
 ## Process
 
-`Process.hierarchical` with `manager_agent=Manager`.
-The Manager orchestrates the 3 worker agents and executes the final
-coordination task. All 4 tasks are listed in `Crew(tasks=[...])`.
+`Process.sequential`. The 4 tasks run in order — extraction -> analysis ->
+diagram -> coordination — and all 4 agents are listed in `Crew(agents=[...])`,
+with all 4 tasks in `Crew(tasks=[...])`. The Manager is the agent of the final
+coordination task. (Switched from hierarchical for latency; see commit 40ed33d.)
 
 ## Agent 1 — Extractor (`agents/extractor.py`)
 
@@ -79,18 +80,18 @@ final Mermaid code.
 | Field | Value |
 |---|---|
 | Role | Director del analisis TGS |
-| Allow delegation | True |
+| Allow delegation | False |
 | Tools | None |
 | Output schema | `TGSAnalysis` (complete, final) |
-| Special | `manager_agent` of the hierarchical Crew |
+| Special | Agent of the final coordination task in the sequential Crew |
 
 **Responsibility:**
-1. Coordinate the 3 worker agents (via `Process.hierarchical`)
+1. Receive the 3 worker outputs as task context (sequential pipeline)
 2. Validate consistency across the 3 outputs:
    - Every subsystem in the Mermaid diagram must exist in `subsistemas`
    - Every relation must reference valid `origen` and `destino`
    - `tipo_de_sistema` and `complejidad` must be coherent with the analysis
-3. Request corrections by re-delegating if inconsistencies are found
+3. Correct any inconsistencies directly while assembling the final output
 4. Assemble the final `TGSAnalysis`:
    - Copy the validated TGS analysis
    - Replace `diagrama_mermaid` with `DiagramOutput.mermaid_code`

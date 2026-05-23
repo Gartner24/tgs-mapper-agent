@@ -115,11 +115,13 @@ forma que el entorno (el usuario) puede consumir.
 `schemas/diagram.py`
 
 ### Subsistema 4 — Manager (Control / retroalimentacion)
-**Proposito:** Coordinar los otros 3 agentes, detectar inconsistencias,
-solicitar correcciones y producir el JSON final integrado.
+**Proposito:** Recibir los outputs de los otros 3 agentes (como contexto de
+tarea), detectar inconsistencias, corregirlas directamente y producir el JSON
+final integrado.
 **TGS:** Es el subsistema de control; implementa retroalimentacion negativa
-(detecta desviaciones respecto al proposito y activa correcciones). Es el
-mecanismo homeostasico del sistema.
+(compara el output ensamblado contra el esquema TGS de referencia, detecta
+desviaciones y aplica correcciones directas antes de entregar). Es el mecanismo
+homeostasico del sistema. Corre como la ultima tarea del proceso secuencial.
 **Elementos clave:** `agents/manager.py`, `tasks/coordination.py`
 
 ### Subsistema 5 — OpenClaw (Extension / amplificacion)
@@ -145,7 +147,7 @@ canales de entrada y salida.
 | Manager | Diagramador | Debil | Si el diagrama falla, el analisis textual sigue siendo util |
 | Extractor | Analista TGS | Secuencial | El Analista no puede operar sin el output previo del Extractor |
 | Analista TGS | Diagramador | Secuencial | El Diagramador necesita el analisis completo antes de generar el diagrama |
-| Manager | todos | Reciproco | El Manager puede re-delegar a cualquier agente si detecta inconsistencias |
+| todos | Manager | Secuencial | El Manager recibe los outputs de los 3 agentes como contexto y, en su tarea final, corrige las inconsistencias directamente en el ensamblaje |
 
 ---
 
@@ -175,8 +177,8 @@ canales de entrada y salida.
 ### Retroalimentacion negativa (principal)
 El **Manager** revisa los outputs del Extractor, Analista y Diagramador. Si
 detecta inconsistencias (subsistema en el diagrama que no existe en el analisis,
-relaciones con nodos inexistentes), re-delega al agente correspondiente para
-correccion. Este es el mecanismo homeostasico que mantiene la coherencia del
+relaciones con nodos inexistentes), las corrige directamente al ensamblar el
+JSON final. Este es el mecanismo homeostasico que mantiene la coherencia del
 output del sistema.
 
 ### Retroalimentacion negativa (usuario)
@@ -206,9 +208,10 @@ memoria entre sesiones (por diseno, para simplicidad del MVP).
 **Justificacion:** El sistema exhibe las caracteristicas de un sistema complejo:
 1. **Emergencia:** El analisis TGS final no es producido por ningun agente
    individual; emerge de la interaccion entre los 4 agentes.
-2. **Retroalimentacion:** El Manager implementa retroalimentacion negativa
-   dinamica que ajusta el proceso en tiempo de ejecucion. El Rol D (tgs-validator)
-   agrega un segundo lazo de retroalimentacion externo al nucleo CrewAI.
+2. **Retroalimentacion:** El Manager implementa retroalimentacion negativa:
+   valida el output ensamblado contra el esquema TGS y corrige las desviaciones
+   antes de entregarlo. El Rol D (tgs-validator) agrega un segundo lazo de
+   retroalimentacion externo al nucleo CrewAI.
 3. **No-linealidad:** El mismo input puede producir analisis diferentes en
    distintas ejecuciones (por la naturaleza estocastica del LLM).
 4. **Adaptacion:** El sistema se adapta a inputs de dominios completamente

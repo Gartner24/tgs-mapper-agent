@@ -30,7 +30,7 @@ Receives an arbitrary input (text, PDF, image, URL) via **Telegram bot** or via 
 | Component | Technology | Role |
 |---|---|---|
 | External orchestration | **n8n** (self-hosted, Docker) | Receives Telegram, routes, calls CrewAI, responds |
-| Multi-agent brain | **CrewAI** (Python, FastAPI) | 4 agents with roles, hierarchical process |
+| Multi-agent brain | **CrewAI** (Python, FastAPI) | 4 agents with roles, sequential process |
 | User channel | **Telegram Bot API** | Main I/O |
 | Distribution | **OpenClaw → Reddit** (already running on VPS) | Publishes the analysis to `r/u_<username>` when the user sends `/publish`. Reddit only in MVP. |
 | LLM | **OpenRouter + DeepSeek V4** (open source via API) | Brain of the agents |
@@ -39,7 +39,7 @@ Receives an arbitrary input (text, PDF, image, URL) via **Telegram bot** or via 
 
 ## 4. The 4 agents (CrewAI)
 
-Process: **`Process.hierarchical`** with the Manager as `manager_agent`.
+Process: **`Process.sequential`** — the 4 tasks run in order (extraction -> analysis -> diagram -> coordination); the Manager runs the final coordination task. (Originally hierarchical; switched to sequential for latency, commit 40ed33d.)
 
 All agent prompts (role, goal, backstory) must be written in **Spanish**, because the LLM must respond in Spanish to the end user. Code identifiers stay in English.
 
@@ -63,9 +63,9 @@ All agent prompts (role, goal, backstory) must be written in **Spanish**, becaus
 
 ### Agent 4 — Coordinator Manager (`manager.py`)
 - **role:** "Director del análisis TGS"
-- **goal:** "Coordinar a los otros 3 agentes, validar la coherencia entre el contenido extraído, el análisis TGS y el diagrama generado. Detectar inconsistencias (ej: el diagrama menciona un subsistema que no está en el análisis), pedir correcciones, y producir el JSON final integrado. Si algo no cuadra, RE-DELEGA al agente correspondiente."
+- **goal:** "Validar la coherencia entre el contenido extraído, el análisis TGS y el diagrama generado. Detectar inconsistencias (ej: el diagrama menciona un subsistema que no está en el análisis) y corregirlas directamente en el JSON final integrado de tipo TGSAnalysis."
 - **backstory:** "Eres editor en jefe y arquitecto de sistemas. Tu superpoder es ver el bosque mientras los demás ven el árbol. Nunca entregas un producto a medias: si detectas un problema, mandas a corregirlo antes de cerrar."
-- **Special:** this is the `manager_agent` of the hierarchical Crew. No tasks are assigned directly to it; CrewAI invokes it automatically.
+- **Special:** the Manager runs the **final coordination task** of the sequential Crew, after the Extractor, Analyst and Diagrammer. It validates the three prior outputs (passed as task context) and assembles the final `TGSAnalysis` directly, without re-delegating.
 
 ## 5. TGS analysis of the project itself (include in docs/)
 
@@ -76,7 +76,7 @@ Each agent is a subsystem of the "TGS Mapper Agent" system:
 | Extractor | Sensor / input subsystem | Converts external reality into processable internal data |
 | TGS Analyst | Processor / core subsystem | Applies the rules of the TGS framework; where emergent behavior occurs |
 | Diagrammer | Output / transduction subsystem | Converts internal information into a visual representation |
-| Manager | Control / feedback subsystem | Compares output with purpose, adjusts by requesting corrections (negative feedback) |
+| Manager | Control / feedback subsystem | Compares the assembled output with purpose, adjusts by correcting inconsistencies directly (negative feedback) |
 
 Couplings:
 - Manager ↔ Extractor: **strong** (Manager depends directly on Extractor output)
@@ -388,7 +388,7 @@ volumes:
 5. `tools/` — pdf_reader, image_reader, url_fetcher
 6. `agents/` — the 4 agents
 7. `tasks/` — the 4 tasks
-8. `crew_setup.py` — assemble the hierarchical Crew
+8. `crew_setup.py` — assemble the sequential Crew
 9. `main.py` — FastAPI with `/analyze` and `/health`
 10. `docker-compose.yml` + `.env.example` + `Makefile`
 11. Local test with `examples/input-text.json`

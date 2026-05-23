@@ -52,7 +52,7 @@ Usuario -> Telegram -> n8n -> CrewAI -> 4 agentes -> respuesta
 - Manager = control/retroalimentacion (valida y corrige)
 
 > "El Manager es el mecanismo homeostasico del sistema: detecta
-> inconsistencias y manda a corregir antes de entregar el resultado."
+> inconsistencias y las corrige directamente antes de entregar el resultado."
 
 ---
 
@@ -68,10 +68,11 @@ GPS. Los clientes generan pedidos y los conductores los entregan. El
 gobierno regula el transporte de carga.
 ```
 
-**Mientras espera (20-40 seg):**
-> "El sistema esta procesando. Primero el Extractor identifica los conceptos
-> clave. Luego el Analista aplica TGS. El Diagramador genera el codigo Mermaid.
-> Y finalmente el Manager valida que todo sea coherente."
+**Mientras espera (2-4 min):**
+> "El sistema esta procesando. Los 4 agentes corren en secuencia: primero el
+> Extractor identifica los conceptos clave, luego el Analista aplica TGS, el
+> Diagramador genera el codigo Mermaid, y finalmente el Manager valida que todo
+> sea coherente y ensambla el JSON final."
 
 **Cuando llega la respuesta, senalar:**
 - El tipo de sistema identificado (abierto, sociotecnico...)

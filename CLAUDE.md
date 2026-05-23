@@ -9,7 +9,7 @@ Persistent project memory for Claude Code. Always read me before acting.
 ## Stack (closed)
 
 - **n8n** (Docker) — orchestration + Telegram integration
-- **CrewAI** (FastAPI in Docker) — hierarchical multi-agent, 4 agents (Extractor, TGS Analyst, Diagrammer, Manager)
+- **CrewAI** (FastAPI in Docker) — sequential multi-agent pipeline, 4 agents (Extractor, TGS Analyst, Diagrammer, Manager)
 - **OpenRouter + DeepSeek V4** — open source LLM via API
 - **Telegram Bot** — main user channel
 - **OpenClaw → Reddit** — publishes the analysis to `r/u_<username>` when the user sends `/publish`. Reddit only in MVP.
@@ -37,10 +37,10 @@ Persistent project memory for Claude Code. Always read me before acting.
 
 ## Architecture decisions
 
-- CrewAI process: **`Process.hierarchical`** with Manager as `manager_agent`.
+- CrewAI process: **`Process.sequential`** — 4 tasks run in order (extraction -> analysis -> diagram -> coordination); the Manager runs the final coordination task. (Switched from hierarchical for latency; see commit 40ed33d.)
 - Agent output: strictly conforms to the Pydantic `TGSAnalysis` schema.
 - Each subsystem = one agent. Deliberate: the project **is itself a TGS system**.
-- The Manager works as a negative feedback mechanism (TGS concept).
+- The Manager works as a negative feedback mechanism (TGS concept): it validates the assembled output against the TGS schema and corrects inconsistencies directly in its final coordination pass (no re-delegation).
 
 ## Reference documents
 

@@ -32,7 +32,7 @@ tgs-n8n (n8n 5678)                                                           |
     |                              v                                         ||
     |                     tgs-crewai (FastAPI 8000)                         ||
     |                              |                                         ||
-    |                    CrewAI hierarchical Crew                           ||
+    |                    CrewAI sequential Crew                             ||
     |                              |                                         ||
     |            ┌─────────────────┼──────────────┐                        ||
     |            v                 v               v                        ||
@@ -90,10 +90,10 @@ Reddit r/u_<username>
    needed, converts them to base64.
 4. n8n POSTs `{input_type, content, user_id}` to `http://tgs-crewai:8000/analyze`.
 5. FastAPI receives the request and calls `run_analysis()`.
-6. CrewAI builds a hierarchical Crew with 4 agents and runs `kickoff()`.
-7. The Manager orchestrates: Extractor runs first, then Analyst, then Diagrammer,
-   finally the Manager's coordination task validates and assembles the final
-   `TGSAnalysis` JSON.
+6. CrewAI builds a sequential Crew with 4 agents and runs `kickoff()`.
+7. The 4 tasks run in order: Extractor first, then Analyst, then Diagrammer,
+   and finally the Manager's coordination task validates the three prior outputs
+   and assembles the final `TGSAnalysis` JSON.
 8. FastAPI returns `{ok, analysis, markdown, mermaid, metadata}`.
 9. n8n formats the response, encodes the Mermaid diagram as a `mermaid.ink` URL,
    saves the analysis to `$workflow.staticData[chatId]`, and sends the markdown

@@ -281,7 +281,7 @@
         "resource": "message",
         "operation": "sendMessage",
         "chatId": "={{ $json.chat_id }}",
-        "text": "Procesando tu analisis bajo el marco TGS. Esto puede tardar 1-2 minutos...",
+        "text": "Procesando tu analisis bajo el marco TGS. Esto puede tardar 2-4 minutos...",
         "additionalFields": {}
       },
       "id": "node-send-ack",
