@@ -1,0 +1,148 @@
+{
+  "ok": true,
+  "analysis": {
+    "tema": "Universidad como sistema sociotecnico",
+    "resumen": "Una universidad es un sistema abierto y sociotecnico que transforma aspirantes en profesionales mediante procesos academicos, administrativos y de extension, interactuando con el Estado, las empresas y la sociedad.",
+    "proposito": "Formar profesionales competentes, generar conocimiento y prestar servicios de extension a la sociedad.",
+    "tipo_de_sistema": {
+      "abierto_o_cerrado": "abierto",
+      "natural_o_artificial": "sociotecnico",
+      "deterministico_o_estocastico": "estocastico",
+      "continuo_o_discreto": "discreto",
+      "justificacion": "Es abierto porque intercambia recursos, personas e informacion con el entorno. Es sociotecnico porque combina actores humanos con infraestructura tecnologica y normativa. Es estocastico porque los resultados academicos de cada estudiante son probabilisticos. Es discreto porque los estados del estudiante cambian en momentos especificos (matricula, grado, desercion)."
+    },
+    "frontera": {
+      "descripcion": "La frontera del sistema la define la institucionalidad universitaria: lo que ocurre dentro de los campus, facultades y programas acreditados.",
+      "elementos_dentro": ["Rectoria", "Vicerrectorias", "Facultades", "Departamentos", "Programas academicos", "Docentes", "Estudiantes", "Personal administrativo"],
+      "elementos_fuera": ["Estado (MEN)", "Empresas empleadoras", "Familias de los estudiantes", "Bachilleratos de origen", "Mercado laboral"]
+    },
+    "entorno": {
+      "descripcion": "El entorno esta compuesto por los actores e instituciones que influyen sobre la universidad sin pertenecer a ella directamente.",
+      "variables_externas": ["Politica publica de educacion superior", "Financiamiento estatal (Ley 30)", "Demanda del mercado laboral", "Tendencias demograficas", "Avance tecnologico", "Competencia de otras universidades"]
+    },
+    "suprasistema": "Sistema de educacion superior colombiano (supervisado por el Ministerio de Educacion Nacional)",
+    "elementos": [
+      {"nombre": "Rector", "rol": "Maximo directivo, toma decisiones estrategicas"},
+      {"nombre": "Vicerrector Academico", "rol": "Coordina la funcion misional de docencia e investigacion"},
+      {"nombre": "Decano", "rol": "Dirige la facultad y sus programas"},
+      {"nombre": "Docente", "rol": "Imparte conocimiento y evalua el aprendizaje"},
+      {"nombre": "Estudiante", "rol": "Sujeto central del proceso formativo"},
+      {"nombre": "Personal administrativo", "rol": "Soporta los procesos logisticos y financieros"}
+    ],
+    "subsistemas": [
+      {
+        "nombre": "Subsistema academico",
+        "proposito": "Gestionar la formacion de los estudiantes mediante curriculos, docentes y evaluacion",
+        "elementos_clave": ["Facultades", "Programas", "Docentes", "Estudiantes"]
+      },
+      {
+        "nombre": "Subsistema administrativo",
+        "proposito": "Proveer los recursos humanos, fisicos y financieros para el funcionamiento",
+        "elementos_clave": ["Vicerrectoria Administrativa", "Personal administrativo", "Presupuesto"]
+      },
+      {
+        "nombre": "Subsistema de investigacion",
+        "proposito": "Generar nuevo conocimiento y transferirlo a la sociedad",
+        "elementos_clave": ["Grupos de investigacion", "Laboratorios", "Publicaciones"]
+      },
+      {
+        "nombre": "Subsistema de extension",
+        "proposito": "Vincular la universidad con el entorno social y empresarial",
+        "elementos_clave": ["Practicas profesionales", "Educacion continua", "Proyectos sociales"]
+      }
+    ],
+    "relaciones": [
+      {
+        "origen": "Subsistema academico",
+        "destino": "Subsistema administrativo",
+        "tipo_acoplamiento": "fuerte",
+        "descripcion": "El academico depende directamente del administrativo para recursos y nomina docente"
+      },
+      {
+        "origen": "Subsistema academico",
+        "destino": "Subsistema de investigacion",
+        "tipo_acoplamiento": "reciproco",
+        "descripcion": "La investigacion alimenta la docencia y la docencia identifica preguntas de investigacion"
+      },
+      {
+        "origen": "Subsistema academico",
+        "destino": "Subsistema de extension",
+        "tipo_acoplamiento": "secuencial",
+        "descripcion": "La formacion precede a la extension: primero se forma al estudiante, luego se vincula al entorno"
+      },
+      {
+        "origen": "Subsistema de extension",
+        "destino": "Subsistema academico",
+        "tipo_acoplamiento": "debil",
+        "descripcion": "El feedback del entorno enriquece los curriculos, pero no de forma inmediata ni sistematica"
+      }
+    ],
+    "caja_negra": {
+      "entradas": ["Aspirantes bachilleres", "Recursos financieros (matriculas, subsidios estatales)", "Conocimiento cientifico global", "Politicas publicas de educacion"],
+      "procesos": ["Admision y matricula", "Formacion academica por semestres", "Investigacion y generacion de conocimiento", "Practica profesional", "Evaluacion y acreditacion"],
+      "salidas": ["Profesionales graduados", "Publicaciones cientificas", "Servicios de extension y consultoria", "Egresados vinculados al mercado laboral"]
+    },
+    "retroalimentacion": [
+      {
+        "tipo": "negativa",
+        "descripcion": "Las tasas de desercion y bajo rendimiento academico activan mecanismos de tutoria y nivelacion para corregir el proceso formativo"
+      },
+      {
+        "tipo": "positiva",
+        "descripcion": "El prestigio y acreditacion de alta calidad atrae mas aspirantes y recursos, amplificando la capacidad del sistema"
+      }
+    ],
+    "estados_y_transiciones": [
+      {
+        "estado": "Aspirante",
+        "transiciones": [
+          {"hacia": "Matriculado", "disparador": "Aprueba proceso de admision y paga matricula"}
+        ]
+      },
+      {
+        "estado": "Matriculado",
+        "transiciones": [
+          {"hacia": "Activo", "disparador": "Inicia clases del primer semestre"},
+          {"hacia": "Desertor", "disparador": "No se presenta o cancela antes de iniciar"}
+        ]
+      },
+      {
+        "estado": "Activo",
+        "transiciones": [
+          {"hacia": "En practica", "disparador": "Cumple creditos requeridos para practica profesional"},
+          {"hacia": "Desertor", "disparador": "Abandona estudios o pierde derechos academicos"}
+        ]
+      },
+      {
+        "estado": "En practica",
+        "transiciones": [
+          {"hacia": "Graduado", "disparador": "Completa requisitos de grado (trabajo de grado + creditos)"}
+        ]
+      }
+    ],
+    "complejidad": {
+      "nivel": "complejo",
+      "justificacion": "El sistema universitario tiene multiples subsistemas con retroalimentacion reciproca, comportamiento emergente (cultura academica, identidad institucional), y sus resultados no son totalmente predecibles a partir de las condiciones iniciales de cada estudiante."
+    },
+    "diagrama_mermaid": "graph TD\n    subgraph Frontera[\"Universidad\"]\n        SA[\"Subsistema Academico\"]\n        SAd[\"Subsistema Administrativo\"]\n        SI[\"Subsistema Investigacion\"]\n        SE[\"Subsistema Extension\"]\n    end\n    E([\"Aspirantes / Recursos\"]) --> SA\n    SA --> SAd\n    SAd --> SA\n    SA <--> SI\n    SA --> SE\n    SE -.-> SA\n    SE --> M([\"Graduados / Publicaciones\"])\n    classDef externo fill:#f0f0f0,stroke:#999\n    class E,M externo",
+    "supuestos": [
+      "Se asume que la universidad es de caracter publico y mixto (con financiamiento estatal y matriculas).",
+      "Se omite el subsistema de bienestar universitario para no superar el limite de 12 nodos en el diagrama.",
+      "Los estados del estudiante representan transiciones ideales; en la realidad pueden existir estados de reserva de cupo o reintegro."
+    ],
+    "preguntas_para_profundizar": [
+      "Como afecta la reduccion del financiamiento estatal a la homeostasis del sistema universitario?",
+      "Que mecanismos de retroalimentacion existen entre el subsistema de extension y la actualizacion curricular?",
+      "Como modela el sistema la transicion del estado 'desertor' de vuelta a 'aspirante' (reingreso)?",
+      "En que medida la digitalizacion de los procesos cambia el tipo de acoplamiento entre el subsistema academico y el administrativo?"
+    ]
+  },
+  "markdown": "# Analisis TGS: Universidad como sistema sociotecnico\n\n## Resumen\nUna universidad es un sistema abierto...",
+  "mermaid": "graph TD\n    subgraph Frontera[\"Universidad\"]\n        SA[\"Subsistema Academico\"]\n        SAd[\"Subsistema Administrativo\"]\n        SI[\"Subsistema Investigacion\"]\n        SE[\"Subsistema Extension\"]\n    end\n    E([\"Aspirantes / Recursos\"]) --> SA\n    SA --> SAd\n    SAd --> SA\n    SA <--> SI\n    SA --> SE\n    SE -.-> SA\n    SE --> M([\"Graduados / Publicaciones\"])\n    classDef externo fill:#f0f0f0,stroke:#999\n    class E,M externo",
+  "metadata": {
+    "duration_seconds": 18.4,
+    "model_used": "openrouter/deepseek/deepseek-chat",
+    "validated_by_manager": true,
+    "corrections_applied": []
+  }
+}

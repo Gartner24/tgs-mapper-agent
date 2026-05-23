@@ -1,0 +1,5 @@
+{
+  "input_type": "pdf",
+  "content": "<base64-encoded-pdf-content-here>",
+  "user_id": "test_local"
+}
