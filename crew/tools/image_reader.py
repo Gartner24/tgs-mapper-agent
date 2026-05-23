@@ -1,4 +1,5 @@
 import base64
+import binascii
 import io
 from typing import Type
 
@@ -6,6 +7,9 @@ from crewai.tools import BaseTool
 from loguru import logger
 from PIL import Image
 from pydantic import BaseModel, Field
+
+Image.MAX_IMAGE_PIXELS = 20_000_000
+_MAX_IMG_BYTES = 20_000_000
 
 
 class ImageReaderInput(BaseModel):
@@ -22,8 +26,15 @@ class ImageReaderTool(BaseTool):
     args_schema: Type[BaseModel] = ImageReaderInput
 
     def _run(self, content: str) -> str:
+        if len(content) > (_MAX_IMG_BYTES * 4 // 3 + 100):
+            return "Error: la imagen supera el tamano maximo permitido (20 MB)."
         try:
             img_bytes = base64.b64decode(content)
+        except binascii.Error:
+            return "Error: el contenido no es una imagen valida en base64."
+        if len(img_bytes) > _MAX_IMG_BYTES:
+            return "Error: la imagen supera el tamano maximo permitido (20 MB)."
+        try:
             img = Image.open(io.BytesIO(img_bytes))
             width, height = img.size
             mode = img.mode

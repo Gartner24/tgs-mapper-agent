@@ -1,5 +1,6 @@
 from crewai import Crew, Process
 from loguru import logger
+from pydantic import ValidationError
 
 from agents import (
     build_extractor_agent,
@@ -43,7 +44,10 @@ def build_crew(input_type: str, content: str) -> Crew:
 
 def run_analysis(input_type: str, content: str) -> TGSAnalysis:
     crew = build_crew(input_type=input_type, content=content)
-    result = crew.kickoff()
-    if isinstance(result.pydantic, TGSAnalysis):
-        return result.pydantic
-    raise ValueError(f"Unexpected crew output type: {type(result.pydantic)}")
+    try:
+        crew_result = crew.kickoff()
+    except ValidationError as exc:
+        raise ValueError(f"El LLM produjo un output que no conforma al esquema TGS: {exc}") from exc
+    if isinstance(crew_result.pydantic, TGSAnalysis):
+        return crew_result.pydantic
+    raise ValueError(f"Unexpected crew output type: {type(crew_result.pydantic)}")

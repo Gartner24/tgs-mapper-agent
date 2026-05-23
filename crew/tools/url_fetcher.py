@@ -1,10 +1,31 @@
+import ipaddress
+import socket
 from typing import Type
+from urllib.parse import urlparse
 
 import httpx
 from bs4 import BeautifulSoup
 from crewai.tools import BaseTool
 from loguru import logger
 from pydantic import BaseModel, Field
+
+_PRIVATE_NETWORKS = [
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
+]
+
+
+def _is_private_host(hostname: str) -> bool:
+    try:
+        ip = ipaddress.ip_address(socket.gethostbyname(hostname))
+        return any(ip in net for net in _PRIVATE_NETWORKS)
+    except Exception:
+        return True
 
 
 class UrlFetcherInput(BaseModel):
@@ -18,8 +39,13 @@ class UrlFetcherTool(BaseTool):
 
     def _run(self, content: str) -> str:
         url = content.strip()
+        parsed = urlparse(url)
+        if not parsed.scheme in ("http", "https"):
+            return "Error: solo se permiten URLs con esquema http o https."
+        if _is_private_host(parsed.hostname or ""):
+            return "Error: URL no permitida."
         try:
-            with httpx.Client(timeout=15, follow_redirects=True) as client:
+            with httpx.Client(timeout=15, follow_redirects=True, max_redirects=5) as client:
                 response = client.get(url, headers={"User-Agent": "TGSMapperAgent/0.1"})
                 response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")

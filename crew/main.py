@@ -1,3 +1,4 @@
+import asyncio
 import time
 import os
 from contextlib import asynccontextmanager
@@ -104,8 +105,8 @@ async def analyze(request: AnalyzeRequest):
 
     stage = "extractor"
     try:
-        stage = "extractor"
-        analysis: TGSAnalysis = run_analysis(
+        analysis: TGSAnalysis = await asyncio.to_thread(
+            run_analysis,
             input_type=request.input_type,
             content=request.content,
         )
@@ -134,5 +135,5 @@ async def analyze(request: AnalyzeRequest):
         logger.error(f"Analysis failed at stage={stage!r} after {duration}s: {exc}")
         return JSONResponse(
             status_code=500,
-            content={"ok": False, "error": str(exc), "stage": stage},
+            content={"ok": False, "error": "Error interno al procesar el analisis. Intenta de nuevo.", "stage": stage},
         )

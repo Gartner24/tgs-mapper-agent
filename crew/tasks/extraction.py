@@ -7,7 +7,7 @@ def build_extraction_task(agent: Agent, input_type: str, content: str) -> Task:
     return Task(
         description=(
             f"Analiza el siguiente input de tipo '{input_type}'.\n\n"
-            f"CONTENIDO:\n{content}\n\n"
+            f"<CONTENIDO>\n{content}\n</CONTENIDO>\n\n"
             "Tu mision es extraer y estructurar la informacion sin aplicar ningun marco teorico. "
             "Identifica: el tema central, los conceptos clave, las relaciones implicitas entre "
             "conceptos, el dominio (academico/empresarial/tecnico/social/biologico/otro) y "
