@@ -226,7 +226,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ tool: 'analysis-memory', args: { action: 'store', user_id: $('Format and Store').item.json.chat_id, analysis: JSON.stringify($('Format and Store').item.json.analysis || {}) } }) }}",
+        "jsonBody": "={{ JSON.stringify({ tool: 'analysis-memory', args: { action: 'store', user_id: $('Format and Store').first().json.chat_id, analysis: JSON.stringify($('Format and Store').first().json.analysis || {}) } }) }}",
         "options": {"timeout": 10000}
       },
       "id": "node-store-memory",
@@ -240,8 +240,8 @@
       "parameters": {
         "resource": "message",
         "operation": "sendMessage",
-        "chatId": "={{ $('Format and Store').item.json.chat_id }}",
-        "text": "={{ $('Format and Store').item.json.text }}",
+        "chatId": "={{ $('Format and Store').first().json.chat_id }}",
+        "text": "={{ $('Format and Store').first().json.text }}",
         "additionalFields": {}
       },
       "id": "node-send-text",
@@ -260,8 +260,8 @@
       "parameters": {
         "resource": "message",
         "operation": "sendPhoto",
-        "chatId": "={{ $('Format and Store').item.json.chat_id }}",
-        "photo": "={{ $('Format and Store').item.json.mermaid_url }}",
+        "chatId": "={{ $('Format and Store').first().json.chat_id }}",
+        "file": "={{ $('Format and Store').first().json.mermaid_url }}",
         "additionalFields": {"caption": "Diagrama del sistema analizado"}
       },
       "id": "node-send-photo",
