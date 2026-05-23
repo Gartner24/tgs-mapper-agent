@@ -1,17 +1,14 @@
 {
   "gateway": {
-    "port": 18789
+    "port": 18789,
+    "mode": "local",
+    "bind": "lan"
   },
   "agents": {
     "defaults": {
       "model": {
         "primary": "openrouter/deepseek/deepseek-chat"
       }
-    }
-  },
-  "memory": {
-    "store": {
-      "path": "/root/.openclaw/memory"
     }
   }
 }

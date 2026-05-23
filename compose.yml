@@ -46,11 +46,15 @@ services:
     image: alpine/openclaw:2026.5.20
     container_name: tgs-openclaw
     env_file: .env
+    environment:
+      # Pure HTTP agent backend: do NOT let OpenClaw own the Telegram bot
+      # (its auto-enabled polling deletes n8n's webhook). n8n owns the bot.
+      - TELEGRAM_BOT_TOKEN=
     depends_on:
       crewai:
         condition: service_healthy
     volumes:
-      - ./openclaw/config:/root/.openclaw
+      - ./openclaw/config:/home/node/.openclaw
       - ./openclaw/workspace:/app/workspace
     expose:
       - "18789"

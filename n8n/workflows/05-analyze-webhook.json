@@ -1,0 +1,66 @@
+{
+  "name": "05 - Analysis Webhook (OpenClaw backend)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tgs-analyze",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [300, 300],
+      "webhookId": "tgs-analyze-hook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://tgs-crewai:8000/analyze",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ input_type: ($json.body.input_type || 'text'), content: $json.body.content, user_id: ($json.body.user_id || '') }) }}",
+        "options": {"timeout": 600000}
+      },
+      "id": "node-analyze",
+      "name": "Analyze",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $json;\nif (!resp || !resp.ok) {\n  return [{ json: { ok: false, error: (resp && resp.error) || 'analysis failed' } }];\n}\nconst mermaidEncoded = Buffer.from(resp.mermaid || '').toString('base64url');\nconst diagram_url = `https://mermaid.ink/img/${mermaidEncoded}`;\nconst md = resp.markdown || '';\nconst markdown = md.length > 3800 ? (md.slice(0, 3750) + '\\n\\n...(resumen truncado)') : md;\nreturn [{ json: { ok: true, markdown, diagram_url, tema: (resp.analysis && resp.analysis.tema) || '' } }];"
+      },
+      "id": "node-format",
+      "name": "Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "node-respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [960, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {"main": [[{"node": "Analyze", "type": "main", "index": 0}]]},
+    "Analyze": {"main": [[{"node": "Format", "type": "main", "index": 0}]]},
+    "Format": {"main": [[{"node": "Respond", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1", "saveDataSuccessExecution": "all", "saveDataErrorExecution": "all"},
+  "id": "tgs-workflow-05",
+  "meta": {"instanceId": "REPLACE_WITH_INSTANCE_ID"}
+}
