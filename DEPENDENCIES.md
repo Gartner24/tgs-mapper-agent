@@ -28,10 +28,10 @@ requests>=2.32.0
 # --- Utils ---
 python-dotenv>=1.0.0
 loguru>=0.7.0
-tenacity>=9.0.0  # retries para llamadas al LLM
+tenacity>=9.0.0  # retries for LLM calls
 ```
 
-## crew/Dockerfile (esqueleto)
+## crew/Dockerfile (skeleton)
 
 ```dockerfile
 FROM python:3.12-slim
@@ -58,25 +58,25 @@ HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-## Servicios en docker-compose.yml
+## Services in docker-compose.yml
 
-| Servicio | Imagen | Puerto local | Función |
+| Service | Image | Local port | Function |
 |---|---|---|---|
-| n8n | docker.n8n.io/n8nio/n8n:latest | 5678 | Orquestación |
-| crewai | build ./crew | 8000 | Servicio multi-agente |
+| n8n | docker.n8n.io/n8nio/n8n:latest | 5678 | Orchestration |
+| crewai | build ./crew | 8000 | Multi-agent service |
 
-OpenClaw corre aparte (ya está en el VPS), n8n lo llama por HTTP.
+OpenClaw runs separately (already on the VPS), n8n calls it via HTTP.
 
-## Servicios externos usados
+## External services used
 
-- **OpenRouter** — `https://openrouter.ai/api/v1` (API key necesaria, registro gratis con $5 de crédito)
-- **Telegram Bot API** — `https://api.telegram.org` (token de @BotFather)
-- **Reddit API** — vía OpenClaw, credenciales tipo "script app"
-- **Mermaid render** — `https://kroki.io` o `https://mermaid.ink` (renderizar diagramas a PNG sin instalación local)
-- **Hostinger VPS** — donde corre todo
-- **Cloudflare / Hostinger DNS** — para subdominios `n8n.gartnercodes.com` y `api.gartnercodes.com`
+- **OpenRouter** — `https://openrouter.ai/api/v1` (API key required, free signup with $5 credit)
+- **Telegram Bot API** — `https://api.telegram.org` (token from @BotFather)
+- **Reddit API** — via OpenClaw, "script" app credentials
+- **Mermaid render** — `https://kroki.io` or `https://mermaid.ink` (render diagrams to PNG without local install)
+- **Hostinger VPS** — where everything runs
+- **Cloudflare / Hostinger DNS** — for subdomains `n8n.qyvos.com` and `api.qyvos.com`
 
-## Cuentas que crea el grupo (datos a recibir antes de programar)
+## Accounts created by the team (data to receive before coding)
 
 ```
 OpenRouter API Key:    sk-or-v1-...
@@ -90,15 +90,15 @@ Reddit client_secret:  ...
 
 ## n8n — community nodes
 
-No se necesitan community packages para el MVP. Todo se hace con nodos built-in:
+No community packages needed for the MVP. Everything works with built-in nodes:
 - `n8n-nodes-base.telegram`
 - `n8n-nodes-base.httpRequest`
 - `n8n-nodes-base.switch`
 - `n8n-nodes-base.code`
 
-## Versiones recomendadas
+## Recommended versions
 
 - **Python:** 3.12
-- **Node (para n8n):** lo que trae la imagen oficial (no se maneja manualmente)
+- **Node (for n8n):** whatever ships with the official image (not managed manually)
 - **Docker Engine:** 24+
-- **Docker Compose:** plugin v2 (`docker compose`, no `docker-compose`)
+- **Docker Compose:** v2 plugin (`docker compose`, not `docker-compose`)

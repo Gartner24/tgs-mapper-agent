@@ -1,68 +1,77 @@
 # CLAUDE.md
 
-Memoria persistente del proyecto para Claude Code. Léeme siempre antes de actuar.
+Persistent project memory for Claude Code. Always read me before acting.
 
-## Proyecto
+## Project
 
-**TGS Mapper Agent** — sistema multi-agente que analiza cualquier input bajo el marco de la Teoría General de Sistemas. Proyecto académico de Ingeniería de Sistemas (UTP), curso Teoría General de Sistemas.
+**TGS Mapper Agent** — multi-agent system that analyzes any input under the lens of General Systems Theory (TGS / GST). Academic project for Systems Engineering (UTP), General Systems Theory course.
 
-## Stack (cerrado)
+## Stack (closed)
 
-- **n8n** (Docker) — orquestación + integración con Telegram
-- **CrewAI** (FastAPI en Docker) — multi-agente jerárquico, 4 agentes (Extractor, Analista TGS, Diagramador, Manager)
-- **OpenRouter + DeepSeek V4** — LLM open source vía API
-- **Telegram Bot** — canal principal de usuario
-- **OpenClaw → Reddit** — publica el análisis en `r/u_<username>` cuando el usuario manda `/publish`. Solo Reddit en el MVP.
-- **Docker Compose** — todo arranca con un solo comando
+- **n8n** (Docker) — orchestration + Telegram integration
+- **CrewAI** (FastAPI in Docker) — hierarchical multi-agent, 4 agents (Extractor, TGS Analyst, Diagrammer, Manager)
+- **OpenRouter + DeepSeek V4** — open source LLM via API
+- **Telegram Bot** — main user channel
+- **OpenClaw → Reddit** — publishes the analysis to `r/u_<username>` when the user sends `/publish`. Reddit only in MVP.
+- **Docker Compose** — everything starts with a single command
 
-## Reglas duras
+## Language rules (CRITICAL)
 
-1. NO usar OpenAI ni Anthropic como LLM del agente. Solo open source vía OpenRouter.
-2. Idioma del código: inglés. Strings al usuario final: español.
-3. Type hints obligatorios en Python.
-4. Pydantic v2 para todos los schemas.
-5. Logging con `loguru`. Nada de `print()`.
-6. CrewAI 0.80+.
-7. No agregar agentes fuera de los 4 definidos.
-8. No agregar dependencias sin justificarlo.
-9. No emojis en código.
-10. Solo Reddit como red de publicación (no Twitter, no LinkedIn).
+- **Code, comments, variable names, function names, technical docs:** English
+- **End-user strings (Telegram, errors, Reddit posts):** Spanish (Colombia)
+- **LLM agent prompts (role, goal, backstory):** Spanish (Colombia)
+- **LLM outputs / analysis content:** Spanish (Colombia)
+- **Pydantic field names:** Spanish (matches TGS course terminology — `frontera`, `subsistemas`, etc.). Class names in English.
 
-## Decisiones de arquitectura
+## Hard rules
 
-- Proceso CrewAI: **`Process.hierarchical`** con Manager como `manager_agent`.
-- Output del agente: estrictamente conforme al schema Pydantic `TGSAnalysis`.
-- Cada subsistema = un agente. Esto es deliberado: el proyecto **es en sí mismo un sistema TGS**.
-- Manager funciona como mecanismo de retroalimentación negativa (concepto TGS).
+1. Do NOT use OpenAI or Anthropic as the agent LLM. Only open source via OpenRouter.
+2. Type hints mandatory in Python.
+3. Pydantic v2 for all schemas.
+4. Logging with `loguru`. No `print()`.
+5. CrewAI 0.80+.
+6. Do not add agents beyond the 4 defined.
+7. Do not add dependencies without justifying them.
+8. No emojis in code.
+9. Reddit only as publication network (no Twitter, no LinkedIn).
 
-## Documentos de referencia
+## Architecture decisions
 
-- `PROJECT_BRIEF.md` — especificación completa del proyecto.
-- `DEPENDENCIES.md` — lista de dependencias y servicios externos.
-- `docs/architecture.md` — diagrama y descripción de la arquitectura.
-- `docs/tgs-analysis-of-itself.md` — análisis TGS del propio proyecto (importante para la exposición).
-- `docs/agents-design.md` — roles, goals, backstories detallados de los 4 agentes.
-- `docs/demo-script.md` — guion de la exposición.
+- CrewAI process: **`Process.hierarchical`** with Manager as `manager_agent`.
+- Agent output: strictly conforms to the Pydantic `TGSAnalysis` schema.
+- Each subsystem = one agent. Deliberate: the project **is itself a TGS system**.
+- The Manager works as a negative feedback mechanism (TGS concept).
 
-## Comandos útiles
+## Reference documents
+
+- `PROJECT_BRIEF.md` — full project specification.
+- `DEPENDENCIES.md` — list of dependencies and external services.
+- `docs/architecture.md` — architecture diagram and description.
+- `docs/tgs-analysis-of-itself.md` — TGS analysis of the project itself (key for the presentation).
+- `docs/agents-design.md` — detailed roles, goals, backstories of the 4 agents.
+- `docs/demo-script.md` — presentation script.
+
+## Useful commands
 
 ```bash
-make up         # docker compose up -d
-make logs       # docker compose logs -f
-make test       # corre tests de smoke
-make down       # detiene todo
-make rebuild    # rebuild crewai container
+just up         # docker compose up -d
+just logs       # docker compose logs -f
+just test       # run smoke test against /analyze
+just down       # stop everything
+just rebuild    # rebuild crewai container
+just health     # check /health endpoint
+just shell      # open shell in crewai container
 ```
 
 ## Endpoints
 
-- CrewAI (interno): `http://crewai:8000/analyze`
-- CrewAI (externo opcional): `https://api.gartnercodes.com/analyze`
-- n8n UI: `https://n8n.gartnercodes.com`
-- Telegram webhook: `https://n8n.gartnercodes.com/webhook/telegram`
+- CrewAI (internal): `http://crewai:8000/analyze`
+- CrewAI (optional external): `https://api.qyvos.com/analyze`
+- n8n UI: `https://n8n.qyvos.com`
+- Telegram webhook: `https://n8n.qyvos.com/webhook/telegram`
 
-## Flujo de un mensaje
+## Message flow
 
-Usuario → Telegram → n8n (Workflow 01) → CrewAI `/analyze` → respuesta a Telegram (texto + diagrama renderizado).
+User → Telegram → n8n (Workflow 01) → CrewAI `/analyze` → response back to Telegram (text + rendered diagram).
 
-Si el usuario manda `/publish` → n8n (Workflow 02) → OpenClaw → Reddit (`r/u_<username>`).
+If the user sends `/publish` → n8n (Workflow 02) → OpenClaw → Reddit (`r/u_<username>`).

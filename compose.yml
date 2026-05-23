@@ -1,0 +1,50 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: tgs-n8n
+    env_file: .env
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PROTOCOL=https
+      - N8N_PORT=5678
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - GENERIC_TIMEZONE=America/Bogota
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_PAYLOAD_SIZE_MAX=32
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/workflows:ro
+    expose:
+      - "5678"
+    networks:
+      - web
+    depends_on:
+      crewai:
+        condition: service_healthy
+    restart: unless-stopped
+
+  crewai:
+    build: ./crew
+    container_name: tgs-crewai
+    env_file: .env
+    expose:
+      - "8000"
+    networks:
+      - web
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+volumes:
+  n8n_data:
+
+networks:
+  web:
+    external: true
