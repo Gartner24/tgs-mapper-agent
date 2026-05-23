@@ -72,12 +72,19 @@ Pereira (UTP)**. A nivel tecnico, pertenece al ecosistema de proyectos del VPS
 |---|---|
 | `tgs-n8n` | Orquestador externo; recibe, enruta y responde mensajes |
 | `tgs-crewai` | Servidor de agentes; expone el endpoint `/analyze` |
+| `tgs-openclaw` | Capa de extension de 6 roles; expone `/tools/invoke` |
 | Agente Extractor | Sensor; convierte el input crudo en datos procesables |
 | Agente Analista TGS | Procesador central; aplica el marco TGS |
 | Agente Diagramador | Transductor de salida; convierte el analisis en codigo Mermaid |
 | Agente Manager | Control y retroalimentacion; valida coherencia y ensambla el JSON final |
+| Skill web-search (Rol C) | Amplificador de senal; enriquece el input con contexto web |
+| Skill tgs-validator (Rol D) | Segunda capa de retroalimentacion negativa sobre el output |
+| Skill analysis-memory (Rol E) | Memoria episodica por usuario (SQLite persistente) |
+| Skill analysis-chat (Rol F) | Canal de dialogo reflexivo sobre analisis previos |
+| Skill reddit-publisher (Rol A) | Transductor de salida hacia el entorno social (Reddit) |
+| Skill crewai-caller (Rol B) | Canal de entrada alternativo (bypass n8n) |
 | Esquemas Pydantic | Contratos de datos internos; garantizan la coherencia entre agentes |
-| LLM (DeepSeek V4) | Motor de razonamiento compartido por los 4 agentes |
+| LLM (DeepSeek V4) | Motor de razonamiento compartido por los 4 agentes y OpenClaw |
 | OpenRouter | Adaptador de protocolo hacia el LLM |
 
 ---
@@ -114,6 +121,18 @@ solicitar correcciones y producir el JSON final integrado.
 (detecta desviaciones respecto al proposito y activa correcciones). Es el
 mecanismo homeostasico del sistema.
 **Elementos clave:** `agents/manager.py`, `tasks/coordination.py`
+
+### Subsistema 5 — OpenClaw (Extension / amplificacion)
+**Proposito:** Extender las capacidades del sistema con 6 roles especializados:
+investigacion web previa al analisis, validacion post-analisis, memoria
+episodica por usuario, dialogo reflexivo, publicacion en Reddit y canal
+de entrada alternativo.
+**TGS:** Es un subsistema de amplificacion que aumenta la variedad del sistema
+(principio de Ashby). Agrega memoria episodica (cambia la clasificacion del
+sistema), segundo lazo de retroalimentacion negativa (Rol D), y variedad de
+canales de entrada y salida.
+**Elementos clave:** `openclaw/workspace/skills/`, `openclaw/config/openclaw.json`,
+`n8n/workflows/03-*.json`, `n8n/workflows/04-*.json`
 
 ---
 
@@ -182,18 +201,25 @@ memoria entre sesiones (por diseno, para simplicidad del MVP).
 
 ## 12. Complejidad
 
-**Nivel: Complejo**
+**Nivel: Complejo (incrementado con OpenClaw)**
 
 **Justificacion:** El sistema exhibe las caracteristicas de un sistema complejo:
 1. **Emergencia:** El analisis TGS final no es producido por ningun agente
    individual; emerge de la interaccion entre los 4 agentes.
 2. **Retroalimentacion:** El Manager implementa retroalimentacion negativa
-   dinamica que ajusta el proceso en tiempo de ejecucion.
+   dinamica que ajusta el proceso en tiempo de ejecucion. El Rol D (tgs-validator)
+   agrega un segundo lazo de retroalimentacion externo al nucleo CrewAI.
 3. **No-linealidad:** El mismo input puede producir analisis diferentes en
    distintas ejecuciones (por la naturaleza estocastica del LLM).
 4. **Adaptacion:** El sistema se adapta a inputs de dominios completamente
    distintos (biologia, empresas, software, sociedad) sin requerir configuracion
    especifica por dominio.
+5. **Memoria (nuevo con OpenClaw):** El Rol E agrega memoria episodica por
+   usuario. El sistema ya no es de estado cero entre sesiones; acumula historia
+   de analisis que influye en el comportamiento del Rol F (dialogo reflexivo).
+6. **Variedad de canales (nuevo con OpenClaw):** Los roles A, B y F amplian
+   los canales de entrada y salida, aumentando la variedad del sistema en el
+   sentido de Ashby.
 
 ---
 

@@ -1,0 +1,7 @@
+{
+  "tool": "analysis-chat",
+  "args": {
+    "user_id": "123456789",
+    "question": "Por que el sistema que analizaste se clasifica como complejo y no simplemente como complicado?"
+  }
+}

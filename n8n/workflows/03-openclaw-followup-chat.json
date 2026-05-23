@@ -1,0 +1,167 @@
+{
+  "name": "03 - OpenClaw Follow-up Chat",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "node-tg-trigger-03",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [300, 300],
+      "webhookId": "tgs-webhook-03",
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": false, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "cond-is-ask",
+              "leftValue": "={{ $json.message?.text ?? '' }}",
+              "rightValue": "/ask",
+              "operator": {"type": "string", "operation": "startsWith"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-is-ask",
+      "name": "Is /ask",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $json.message;\nconst chatId = String(msg.chat.id);\nconst text = (msg.text || '').trim();\nconst question = text.replace(/^\\/ask\\s*/i, '').trim();\nif (!question) {\n  return [{ json: { chat_id: chatId, question: '', empty: true } }];\n}\nreturn [{ json: { chat_id: chatId, question, empty: false } }];"
+      },
+      "id": "node-extract-question",
+      "name": "Extract Question",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": false, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "cond-has-question",
+              "leftValue": "={{ $json.empty }}",
+              "rightValue": true,
+              "operator": {"type": "boolean", "operation": "notEquals"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-is-valid-question",
+      "name": "Is Valid Question",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 180]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chat_id }}",
+        "text": "Envia /ask <pregunta> con tu pregunta sobre el analisis. Ejemplo: /ask Que tipo de sistema es?",
+        "additionalFields": {}
+      },
+      "id": "node-send-ask-error",
+      "name": "Send Ask Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1180, 320],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://tgs-openclaw:18789/tools/invoke",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "={{ \"Bearer \" + $env.OPENCLAW_API_KEY }}"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tool: 'analysis-chat', args: { user_id: $json.chat_id, question: $json.question } }) }}",
+        "options": {"timeout": 30000}
+      },
+      "id": "node-chat-openclaw",
+      "name": "Chat with Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1180, 80]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('Extract Question').item.json.chat_id }}",
+        "text": "={{ $json.reply || $json.result || 'No pude procesar tu pregunta. Intenta de nuevo.' }}",
+        "additionalFields": {"parse_mode": "Markdown"}
+      },
+      "id": "node-send-reply",
+      "name": "Send Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1400, 80],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{"node": "Is /ask", "type": "main", "index": 0}]]
+    },
+    "Is /ask": {
+      "main": [
+        [{"node": "Extract Question", "type": "main", "index": 0}],
+        []
+      ]
+    },
+    "Extract Question": {
+      "main": [[{"node": "Is Valid Question", "type": "main", "index": 0}]]
+    },
+    "Is Valid Question": {
+      "main": [
+        [{"node": "Chat with Analysis", "type": "main", "index": 0}],
+        [{"node": "Send Ask Error", "type": "main", "index": 0}]
+      ]
+    },
+    "Chat with Analysis": {
+      "main": [[{"node": "Send Reply", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "id": "tgs-workflow-03",
+  "meta": {"instanceId": "REPLACE_WITH_INSTANCE_ID"}
+}

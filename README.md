@@ -31,9 +31,10 @@ Send `/publish` after an analysis to post it to Reddit.
 |---|---|
 | Orchestration | n8n (Docker) |
 | Multi-agent brain | CrewAI + FastAPI (Python 3.12, Docker) |
+| Extension layer | OpenClaw (Docker, 6 roles) |
 | User channel | Telegram Bot API |
 | LLM | OpenRouter + DeepSeek V4 |
-| Reddit publishing | OpenClaw (separate VPS process) |
+| Web search | Tavily API (Role C) |
 | Reverse proxy | Nginx + Certbot (centralized, `vps-proxy`) |
 | Infrastructure | Docker Compose on Hostinger VPS |
 
@@ -147,13 +148,16 @@ for the analysis.
 ## Common commands (just)
 
 ```bash
-just up        # start all services
-just down      # stop all services
-just logs      # stream logs
-just rebuild   # rebuild and restart crewai only
-just shell     # open shell in crewai container
-just health    # check /health endpoint
-just test      # run smoke test with examples/input-text.json
+just up              # start all services
+just down            # stop all services
+just logs            # stream logs
+just rebuild         # rebuild and restart crewai only
+just shell           # open shell in crewai container
+just health          # check /health endpoint
+just test            # run smoke test with examples/input-text.json
+just openclaw-logs   # stream OpenClaw logs only
+just openclaw-shell  # open shell in OpenClaw container
+just test-openclaw   # smoke test all 6 OpenClaw roles
 ```
 
 Install `just`: `cargo install just` or `apt install just`
@@ -225,11 +229,15 @@ tgs-mapper-agent/
 │   ├── tools/                   # PDF, image, URL tools
 │   ├── schemas/                 # Pydantic v2 models (TGSAnalysis, etc.)
 │   └── config/llm.py            # OpenRouter LLM config
+├── openclaw/                    # OpenClaw extension layer (6 roles)
+│   ├── config/openclaw.json     # OpenClaw config (model, memory, gateway)
+│   └── workspace/skills/        # 6 skill directories (SKILL.md each)
 ├── n8n/workflows/               # n8n workflow JSON (import into n8n UI)
+├── scripts/                     # Smoke test scripts
 ├── frontend/index.html          # Static demo frontend
 ├── deploy/proxy/                # Nginx vhost config for the VPS proxy
 ├── docs/                        # Architecture, agent design, TGS self-analysis
-└── examples/                    # Sample inputs and expected output
+└── examples/                    # Sample inputs, expected output, OpenClaw payloads
 ```
 
 ---
@@ -240,8 +248,10 @@ tgs-mapper-agent/
 |---|---|
 | `docs/architecture.md` | System architecture, component diagram, request lifecycle |
 | `docs/tgs-analysis-of-itself.md` | TGS analysis of the project itself (course requirement) |
+| `docs/openclaw-roles-tgs.md` | TGS mapping of the 6 OpenClaw roles |
 | `docs/agents-design.md` | Agent roles, tools, schemas, task dependency chain |
 | `docs/demo-script.md` | Presentation script for the live demo |
+| `openclaw/README.md` | OpenClaw skills API reference and usage |
 | `n8n/README.md` | n8n workflow import and configuration guide |
 | `deploy/proxy/README.md` | Nginx vhost installation on the VPS |
 

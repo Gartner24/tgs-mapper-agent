@@ -33,3 +33,15 @@ shell:
 # Check health endpoint
 health:
     docker compose exec crewai curl -s http://localhost:8000/health | python3 -m json.tool
+
+# Stream logs from OpenClaw only
+openclaw-logs:
+    docker compose logs -f openclaw
+
+# Open a shell inside the OpenClaw container
+openclaw-shell:
+    docker compose exec openclaw /bin/sh
+
+# Smoke test all 6 OpenClaw roles (requires OPENCLAW_API_KEY in env)
+test-openclaw:
+    bash scripts/test-openclaw-roles.sh

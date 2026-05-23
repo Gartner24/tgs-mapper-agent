@@ -1,0 +1,17 @@
+{
+  "gateway": {
+    "port": 18789
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openrouter/deepseek/deepseek-chat"
+      }
+    }
+  },
+  "memory": {
+    "store": {
+      "path": "/root/.openclaw/memory"
+    }
+  }
+}

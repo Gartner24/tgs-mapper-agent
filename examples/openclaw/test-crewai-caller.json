@@ -1,0 +1,8 @@
+{
+  "tool": "crewai-caller",
+  "args": {
+    "input_type": "text",
+    "content": "El sistema de transporte masivo de Bogota (TransMilenio) con sus rutas troncales, alimentadoras, portales, estaciones intermedias, flota de buses y sistema de recaudo electronico.",
+    "user_id": "direct-api-test"
+  }
+}

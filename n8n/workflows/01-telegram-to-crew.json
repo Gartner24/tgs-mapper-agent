@@ -43,13 +43,46 @@
     },
     {
       "parameters": {
-        "jsCode": "const msg = $json.message;\nconst chatId = String(msg.chat.id);\nconst text = (msg.text || '').trim();\nconst urlRegex = /https?:\\/\\/[^\\s]+/;\n\nif (msg.document && msg.document.mime_type === 'application/pdf') {\n  return [{ json: { input_type: 'pdf', file_id: msg.document.file_id, chat_id: chatId, needs_download: true } }];\n}\nif (msg.photo && msg.photo.length > 0) {\n  const photo = msg.photo[msg.photo.length - 1];\n  return [{ json: { input_type: 'image', file_id: photo.file_id, chat_id: chatId, needs_download: true } }];\n}\nconst urlMatch = text.match(urlRegex);\nif (urlMatch) {\n  return [{ json: { input_type: 'url', content: urlMatch[0], chat_id: chatId, needs_download: false } }];\n}\nreturn [{ json: { input_type: 'text', content: text, chat_id: chatId, needs_download: false } }];"
+        "jsCode": "const msg = $json.message;\nconst chatId = String(msg.chat.id);\nconst text = (msg.text || '').trim();\nconst urlRegex = /https?:\\/\\/[^\\s]+/;\n\nif (msg.document && msg.document.mime_type === 'application/pdf') {\n  return [{ json: { input_type: 'pdf', file_id: msg.document.file_id, chat_id: chatId, needs_download: true, content: '' } }];\n}\nif (msg.photo && msg.photo.length > 0) {\n  const photo = msg.photo[msg.photo.length - 1];\n  return [{ json: { input_type: 'image', file_id: photo.file_id, chat_id: chatId, needs_download: true, content: '' } }];\n}\nconst urlMatch = text.match(urlRegex);\nif (urlMatch) {\n  return [{ json: { input_type: 'url', content: urlMatch[0], chat_id: chatId, needs_download: false } }];\n}\nreturn [{ json: { input_type: 'text', content: text, chat_id: chatId, needs_download: false } }];"
       },
       "id": "node-detect-type",
       "name": "Detect Type",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [740, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://tgs-openclaw:18789/tools/invoke",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "={{ \"Bearer \" + $env.OPENCLAW_API_KEY }}"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tool: 'web-search', args: { topic: $json.content || $json.input_type } }) }}",
+        "options": {"timeout": 15000}
+      },
+      "id": "node-web-research",
+      "name": "Web Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 420],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const research = $json?.result || '';\nconst prev = $('Detect Type').item.json;\n\nif ((prev.input_type === 'text' || prev.input_type === 'url') && research) {\n  return [{ json: { ...prev, content: `Contexto de investigacion web:\\n${research}\\n\\n---\\n\\n${prev.content}` } }];\n}\nreturn [{ json: prev }];"
+      },
+      "id": "node-merge-research",
+      "name": "Merge Research",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1180, 420]
     },
     {
       "parameters": {
@@ -71,7 +104,7 @@
       "name": "Needs Download",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [960, 420]
+      "position": [1400, 420]
     },
     {
       "parameters": {
@@ -89,7 +122,7 @@
       "name": "Get Telegram File",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1180, 220]
+      "position": [1620, 220]
     },
     {
       "parameters": {
@@ -105,7 +138,7 @@
       "name": "Download File",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1400, 220]
+      "position": [1840, 220]
     },
     {
       "parameters": {
@@ -115,7 +148,7 @@
       "name": "To Base64",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1620, 220]
+      "position": [2060, 220]
     },
     {
       "parameters": {
@@ -130,7 +163,7 @@
       "name": "Analyze Binary",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1840, 220]
+      "position": [2280, 220]
     },
     {
       "parameters": {
@@ -145,31 +178,77 @@
       "name": "Analyze Text",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1180, 580]
+      "position": [1620, 580]
     },
     {
       "parameters": {
-        "jsCode": "const resp = $json;\nconst chatId = $('Detect Type').item.json.chat_id;\n\nif (!resp.ok) {\n  return [{ json: { ok: false, chat_id: chatId, text: `Error en el analisis: ${resp.error}`, mermaid_url: null } }];\n}\n\n$workflow.staticData[chatId] = resp.analysis;\n\nconst mermaidEncoded = Buffer.from(resp.mermaid).toString('base64url');\nconst mermaidUrl = `https://mermaid.ink/img/${mermaidEncoded}`;\n\nreturn [{ json: { ok: true, chat_id: chatId, text: resp.markdown, mermaid_url: mermaidUrl } }];"
+        "jsCode": "const resp = $json;\nconst chatId = $('Detect Type').item.json.chat_id;\n\nif (!resp.ok) {\n  return [{ json: { ok: false, chat_id: chatId, text: `Error en el analisis: ${resp.error}`, mermaid_url: null, analysis: null } }];\n}\n\n$workflow.staticData[chatId] = resp.analysis;\n\nconst mermaidEncoded = Buffer.from(resp.mermaid).toString('base64url');\nconst mermaidUrl = `https://mermaid.ink/img/${mermaidEncoded}`;\n\nreturn [{ json: { ok: true, chat_id: chatId, text: resp.markdown, mermaid_url: mermaidUrl, analysis: resp.analysis } }];"
       },
       "id": "node-format-store",
       "name": "Format and Store",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2060, 400]
+      "position": [2500, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://tgs-openclaw:18789/tools/invoke",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "={{ \"Bearer \" + $env.OPENCLAW_API_KEY }}"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tool: 'tgs-validator', args: { analysis: JSON.stringify($json.analysis || {}) } }) }}",
+        "options": {"timeout": 20000}
+      },
+      "id": "node-validate-tgs",
+      "name": "Validate TGS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2720, 400],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://tgs-openclaw:18789/tools/invoke",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "={{ \"Bearer \" + $env.OPENCLAW_API_KEY }}"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tool: 'analysis-memory', args: { action: 'store', user_id: $('Format and Store').item.json.chat_id, analysis: JSON.stringify($('Format and Store').item.json.analysis || {}) } }) }}",
+        "options": {"timeout": 10000}
+      },
+      "id": "node-store-memory",
+      "name": "Store Memory",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2940, 400],
+      "continueOnFail": true
     },
     {
       "parameters": {
         "resource": "message",
         "operation": "sendMessage",
-        "chatId": "={{ $json.chat_id }}",
-        "text": "={{ $json.text }}",
+        "chatId": "={{ $('Format and Store').item.json.chat_id }}",
+        "text": "={{ $('Format and Store').item.json.text }}",
         "additionalFields": {"parse_mode": "Markdown"}
       },
       "id": "node-send-text",
       "name": "Send Analysis",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [2280, 400],
+      "position": [3160, 400],
       "credentials": {
         "telegramApi": {
           "id": "REPLACE_WITH_CREDENTIAL_ID",
@@ -189,7 +268,7 @@
       "name": "Send Diagram",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [2500, 400],
+      "position": [3380, 400],
       "credentials": {
         "telegramApi": {
           "id": "REPLACE_WITH_CREDENTIAL_ID",
@@ -210,6 +289,12 @@
       ]
     },
     "Detect Type": {
+      "main": [[{"node": "Web Research", "type": "main", "index": 0}]]
+    },
+    "Web Research": {
+      "main": [[{"node": "Merge Research", "type": "main", "index": 0}]]
+    },
+    "Merge Research": {
       "main": [[{"node": "Needs Download", "type": "main", "index": 0}]]
     },
     "Needs Download": {
@@ -234,6 +319,12 @@
       "main": [[{"node": "Format and Store", "type": "main", "index": 0}]]
     },
     "Format and Store": {
+      "main": [[{"node": "Validate TGS", "type": "main", "index": 0}]]
+    },
+    "Validate TGS": {
+      "main": [[{"node": "Store Memory", "type": "main", "index": 0}]]
+    },
+    "Store Memory": {
       "main": [[{"node": "Send Analysis", "type": "main", "index": 0}]]
     },
     "Send Analysis": {

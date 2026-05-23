@@ -13,46 +13,62 @@ User (Telegram)
     |
     | HTTPS (443)
     v
-nginx-proxy  ──── [web Docker network] ────────────────────────────────┐
-    |                                                                   |
-    | proxy_pass http://tgs-n8n:5678                                   |
-    v                                                                   |
-tgs-n8n (n8n 5678)                                                     |
-    |                                                                   |
-    | Workflow 01: any message                                          |
-    |   1. Detect input type (text/url/pdf/image)                      |
-    |   2. Download binary from Telegram if needed                     |
-    |   3. POST /analyze ──────────────────────────────────────────────┤
-    |                                                                   |
-    |   POST http://tgs-crewai:8000/analyze                            |
-    |                              |                                    |
-    |                              v                                    |
-    |                     tgs-crewai (FastAPI 8000)                    |
-    |                              |                                    |
-    |                    CrewAI hierarchical Crew                      |
-    |                              |                                    |
-    |            ┌─────────────────┼──────────────┐                   |
-    |            v                 v               v                   |
-    |       Extractor          Analyst TGS    Diagrammer               |
-    |       (sensor)           (processor)   (output)                  |
-    |            └─────────────────┼──────────────┘                   |
-    |                              v                                    |
-    |                         Manager (control)                        |
-    |                   validates + assembles TGSAnalysis               |
-    |                              |                                    |
-    |   <─── {ok, analysis, markdown, mermaid, metadata} ─────────────┘
+nginx-proxy  ──── [web Docker network] ──────────────────────────────────────┐
+    |                                                                         |
+    | proxy_pass http://tgs-n8n:5678                                         |
+    v                                                                         |
+tgs-n8n (n8n 5678)                                                           |
+    |                                                                         |
+    | Workflow 01: any message                                                |
+    |   1. Detect input type (text/url/pdf/image)                            |
+    |   2. [Role C] POST /tools/invoke web-search ──────────────────────┐   |
+    |                                              tgs-openclaw:18789   |   |
+    |   3. Merge research context into content  <───────────────────────┘   |
+    |   4. Download binary from Telegram if needed                           |
+    |   5. POST /analyze ──────────────────────────────────────────────────┤|
+    |                                                                        ||
+    |   POST http://tgs-crewai:8000/analyze                                 ||
+    |                              |                                         ||
+    |                              v                                         ||
+    |                     tgs-crewai (FastAPI 8000)                         ||
+    |                              |                                         ||
+    |                    CrewAI hierarchical Crew                           ||
+    |                              |                                         ||
+    |            ┌─────────────────┼──────────────┐                        ||
+    |            v                 v               v                        ||
+    |       Extractor          Analyst TGS    Diagrammer                    ||
+    |       (sensor)           (processor)   (output)                       ||
+    |            └─────────────────┼──────────────┘                        ||
+    |                              v                                         ||
+    |                         Manager (control)                             ||
+    |                   validates + assembles TGSAnalysis                    ||
+    |                              |                                         ||
+    |   <─── {ok, analysis, markdown, mermaid, metadata} ──────────────────┘|
+    |                                                                         |
+    |   6. [Role D] POST /tools/invoke tgs-validator ────────────────────┐  |
+    |                                                  tgs-openclaw:18789|  |
+    |   7. [Role E] POST /tools/invoke analysis-memory (fire+forget) ────┘  |
+    |   8. Send markdown text to user                                        |
+    |   9. Send diagram image to user                                        |
+    |                                                                         |
+    | Workflow 02: /publish command                                           |
+    |   1. Retrieve analysis from staticData[chat_id]                        |
+    |   2. [Role A] POST /tools/invoke reddit-publisher ─────────────────┐  |
+    |                                                   tgs-openclaw:18789|  |
+    |   3. Send Reddit post URL to user              <────────────────────┘  |
+    |                                                                         |
+    | Workflow 03: /ask <question> command                                    |
+    |   1. [Role F] POST /tools/invoke analysis-chat ─────────────────────┐ |
+    |                                                 tgs-openclaw:18789   | |
+    |   2. Send reply to user                      <──────────────────────┘ |
+    |                                                                         |
+    | Workflow 04: POST /webhook/analyze-direct                               |
+    |   1. [Role B] POST /tools/invoke crewai-caller ─────────────────────┐ |
+    |   2. Return JSON response                    <──────────────────────┘ |
+    v                                                                         |
+tgs-openclaw (OpenClaw 18789)  ──────────────────────────────────────────────┘
     |
-    |   4. Render mermaid.ink URL
-    |   5. Store analysis in staticData[chat_id]
-    |   6. Send markdown text to user
-    |   7. Send diagram image to user
-    |
-    | Workflow 02: /publish command
-    |   1. Retrieve analysis from staticData[chat_id]
-    |   2. POST OpenClaw /publish
-    v
-OpenClaw (VPS, separate process)
-    |
+    | reddit-publisher skill
     v
 Reddit r/u_<username>
 ```
@@ -63,8 +79,8 @@ Reddit r/u_<username>
 |---|---|---|---|---|
 | `tgs-n8n` | n8n latest | web (external) | expose 5678 | Orchestration, Telegram I/O |
 | `tgs-crewai` | ./crew (Python 3.12) | web (external) | expose 8000 | Multi-agent brain |
+| `tgs-openclaw` | alpine/openclaw:2026.5.20 | web (external) | expose 18789 | 6-role extension layer |
 | `nginx-proxy` | custom nginx:alpine | web (external) | 80, 443 | TLS termination, routing |
-| OpenClaw | separate VPS process | HTTP | varies | Reddit publishing |
 
 ## Request lifecycle
 

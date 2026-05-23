@@ -1,0 +1,119 @@
+{
+  "name": "04 - OpenClaw Direct Channel",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "analyze-direct",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-04",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [300, 300],
+      "webhookId": "tgs-direct-04"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $json.headers || {};\nconst providedKey = (headers['x-api-key'] || headers['authorization'] || '').replace(/^Bearer\\s+/i, '').trim();\nif (!providedKey || providedKey !== $env.OPENCLAW_API_KEY) {\n  return [{ json: { ok: false, error: 'No autorizado', status: 401 } }];\n}\n\nconst body = $json.body || $json;\nconst input_type = body.input_type || 'text';\nconst content = body.content || '';\nconst user_id = body.user_id || 'direct-api';\n\nif (!content) {\n  return [{ json: { ok: false, error: 'El campo content es requerido', status: 400 } }];\n}\nif (!['text','url','pdf','image'].includes(input_type)) {\n  return [{ json: { ok: false, error: 'input_type debe ser text, url, pdf o image', status: 400 } }];\n}\nreturn [{ json: { input_type, content, user_id } }];"
+      },
+      "id": "node-validate-input",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": false, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "cond-is-valid",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": false,
+              "operator": {"type": "boolean", "operation": "notEquals"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-is-valid",
+      "name": "Is Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [740, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {"responseCode": "={{ $json.status || 400 }}"}
+      },
+      "id": "node-respond-error",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [960, 460]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://tgs-openclaw:18789/tools/invoke",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "={{ \"Bearer \" + $env.OPENCLAW_API_KEY }}"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tool: 'crewai-caller', args: { input_type: $json.input_type, content: $json.content, user_id: $json.user_id } }) }}",
+        "options": {"timeout": 150000}
+      },
+      "id": "node-call-openclaw",
+      "name": "Call via OpenClaw",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 180]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "node-respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1180, 180]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Validate Input", "type": "main", "index": 0}]]
+    },
+    "Validate Input": {
+      "main": [[{"node": "Is Valid", "type": "main", "index": 0}]]
+    },
+    "Is Valid": {
+      "main": [
+        [{"node": "Call via OpenClaw", "type": "main", "index": 0}],
+        [{"node": "Respond Error", "type": "main", "index": 0}]
+      ]
+    },
+    "Call via OpenClaw": {
+      "main": [[{"node": "Respond", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "id": "tgs-workflow-04",
+  "meta": {"instanceId": "REPLACE_WITH_INSTANCE_ID"}
+}

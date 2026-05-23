@@ -43,13 +43,46 @@
     },
     {
       "parameters": {
-        "jsCode": "const chatId = String($json.message.chat.id);\nconst analysis = $workflow.staticData[chatId];\n\nif (!analysis) {\n  return [{ json: { has_analysis: false, chat_id: chatId } }];\n}\n\nconst tema = analysis.tema || 'Analisis TGS';\nconst resumen = analysis.resumen || '';\nconst proposito = analysis.proposito || '';\nconst subsistemas = (analysis.subsistemas || []).map(s => `- **${s.nombre}**: ${s.proposito}`).join('\\n');\nconst complejidad = analysis.complejidad?.nivel || '';\nconst mermaidEncoded = Buffer.from(analysis.diagrama_mermaid || '').toString('base64url');\nconst mermaidUrl = `https://mermaid.ink/img/${mermaidEncoded}`;\n\nconst title = `[TGS] ${tema}`.slice(0, 300);\nconst body = `## ${tema}\\n\\n**Resumen:** ${resumen}\\n\\n**Proposito:** ${proposito}\\n\\n## Subsistemas\\n${subsistemas}\\n\\n**Complejidad:** ${complejidad}\\n\\n[Ver diagrama del sistema](${mermaidUrl})\\n\\n---\\n*Generado con TGS Mapper Agent*`;\n\nreturn [{ json: { has_analysis: true, chat_id: chatId, title, body, mermaid_url: mermaidUrl } }];"
+        "jsCode": "const chatId = String($json.message.chat.id);\nreturn [{ json: { chat_id: chatId } }];"
       },
-      "id": "node-retrieve-analysis",
-      "name": "Retrieve Analysis",
+      "id": "node-extract-chat-id",
+      "name": "Extract Chat ID",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [740, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://tgs-openclaw:18789/tools/invoke",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "={{ \"Bearer \" + $env.OPENCLAW_API_KEY }}"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tool: 'analysis-memory', args: { action: 'retrieve', user_id: $json.chat_id } }) }}",
+        "options": {"timeout": 10000}
+      },
+      "id": "node-retrieve-memory",
+      "name": "Retrieve from Memory",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 180],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatId = $('Extract Chat ID').item.json.chat_id;\nlet rawAnalysis = $json.analysis || null;\nlet analysis = null;\nif (rawAnalysis) {\n  if (typeof rawAnalysis === 'string') {\n    try { analysis = JSON.parse(rawAnalysis); } catch(e) { analysis = null; }\n  } else {\n    analysis = rawAnalysis;\n  }\n}\n\nif (!analysis) {\n  return [{ json: { has_analysis: false, chat_id: chatId } }];\n}\n\nconst tema = analysis.tema || 'Analisis TGS';\nconst resumen = analysis.resumen || '';\nconst proposito = analysis.proposito || '';\nconst subsistemas = (analysis.subsistemas || []).map(s => `- **${s.nombre}**: ${s.proposito}`).join('\\n');\nconst complejidad = analysis.complejidad?.nivel || '';\nconst mermaidEncoded = Buffer.from(analysis.diagrama_mermaid || '').toString('base64url');\nconst mermaidUrl = `https://mermaid.ink/img/${mermaidEncoded}`;\n\nconst title = `[TGS] ${tema}`.slice(0, 300);\nconst body = `## ${tema}\\n\\n**Resumen:** ${resumen}\\n\\n**Proposito:** ${proposito}\\n\\n## Subsistemas\\n${subsistemas}\\n\\n**Complejidad:** ${complejidad}\\n\\n[Ver diagrama del sistema](${mermaidUrl})\\n\\n---\\n*Generado con TGS Mapper Agent*`;\n\nreturn [{ json: { has_analysis: true, chat_id: chatId, title, body, mermaid_url: mermaidUrl } }];"
+      },
+      "id": "node-parse-analysis",
+      "name": "Parse Retrieved Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1180, 180]
     },
     {
       "parameters": {
@@ -71,21 +104,21 @@
       "name": "Has Analysis",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [960, 180]
+      "position": [1400, 180]
     },
     {
       "parameters": {
         "resource": "message",
         "operation": "sendMessage",
         "chatId": "={{ $json.chat_id }}",
-        "text": "No tienes ningún análisis guardado. Envíame primero un texto, PDF, imagen o URL para analizar.",
+        "text": "No tienes ningun analisis guardado. Enviame primero un texto, PDF, imagen o URL para analizar.",
         "additionalFields": {}
       },
       "id": "node-no-analysis-msg",
       "name": "No Analysis Message",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1180, 320],
+      "position": [1620, 320],
       "credentials": {
         "telegramApi": {
           "id": "REPLACE_WITH_CREDENTIAL_ID",
@@ -96,38 +129,38 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.OPENCLAW_URL }}/publish",
+        "url": "=http://tgs-openclaw:18789/tools/invoke",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {"name": "Authorization", "value": "=Bearer {{ $env.OPENCLAW_API_KEY }}"},
+            {"name": "Authorization", "value": "={{ \"Bearer \" + $env.OPENCLAW_API_KEY }}"},
             {"name": "Content-Type", "value": "application/json"}
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ platform: 'reddit', target: $env.REDDIT_TARGET, title: $json.title, body: $json.body, media_url: $json.mermaid_url, credentials: { client_id: $env.REDDIT_CLIENT_ID, client_secret: $env.REDDIT_CLIENT_SECRET, username: $env.REDDIT_USERNAME, password: $env.REDDIT_PASSWORD } }) }}",
+        "jsonBody": "={{ JSON.stringify({ tool: 'reddit-publisher', args: { title: $json.title, body: $json.body, target: $env.REDDIT_TARGET } }) }}",
         "options": {"timeout": 30000}
       },
       "id": "node-openclaw",
       "name": "Publish to Reddit",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1180, 80]
+      "position": [1620, 80]
     },
     {
       "parameters": {
         "resource": "message",
         "operation": "sendMessage",
-        "chatId": "={{ $('Retrieve Analysis').item.json.chat_id }}",
-        "text": "={{ $json.ok ? `✅ Análisis publicado en Reddit:\\n${$json.post_url}` : `❌ Error al publicar: ${$json.error}` }}",
+        "chatId": "={{ $('Extract Chat ID').item.json.chat_id }}",
+        "text": "={{ $json.ok ? `Analisis publicado en Reddit:\\n${$json.post_url}` : `Error al publicar: ${$json.error}` }}",
         "additionalFields": {}
       },
       "id": "node-confirm",
       "name": "Confirm Publication",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1400, 80],
+      "position": [1840, 80],
       "credentials": {
         "telegramApi": {
           "id": "REPLACE_WITH_CREDENTIAL_ID",
@@ -143,11 +176,17 @@
     },
     "Is /publish": {
       "main": [
-        [{"node": "Retrieve Analysis", "type": "main", "index": 0}],
+        [{"node": "Extract Chat ID", "type": "main", "index": 0}],
         []
       ]
     },
-    "Retrieve Analysis": {
+    "Extract Chat ID": {
+      "main": [[{"node": "Retrieve from Memory", "type": "main", "index": 0}]]
+    },
+    "Retrieve from Memory": {
+      "main": [[{"node": "Parse Retrieved Analysis", "type": "main", "index": 0}]]
+    },
+    "Parse Retrieved Analysis": {
       "main": [[{"node": "Has Analysis", "type": "main", "index": 0}]]
     },
     "Has Analysis": {

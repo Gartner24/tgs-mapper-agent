@@ -1,0 +1,6 @@
+{
+  "tool": "tgs-validator",
+  "args": {
+    "analysis": "{\"tema\":\"Universidad\",\"tipo_sistema\":{\"abierto_cerrado\":\"abierto\"},\"subsistemas\":[{\"nombre\":\"Subsistema Academico\",\"proposito\":\"Gestion de cursos\"}],\"elementos\":[{\"nombre\":\"Rector\",\"rol\":\"Control\"}],\"relaciones\":[{\"origen\":\"Subsistema Academico\",\"destino\":\"Rector\",\"tipo\":\"fuerte\"}],\"diagrama_mermaid\":\"graph TD\\n  A[Subsistema Academico] --> B[Rector]\",\"complejidad\":{\"nivel\":\"complejo\"}}"
+  }
+}

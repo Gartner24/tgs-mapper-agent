@@ -1,0 +1,8 @@
+{
+  "tool": "analysis-memory",
+  "args": {
+    "action": "store",
+    "user_id": "123456789",
+    "analysis": "{\"tema\":\"Universidad\",\"complejidad\":{\"nivel\":\"complejo\"},\"resumen\":\"Sistema educativo abierto\"}"
+  }
+}

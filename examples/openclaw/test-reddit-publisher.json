@@ -1,0 +1,8 @@
+{
+  "tool": "reddit-publisher",
+  "args": {
+    "title": "[TGS] Analisis de la Universidad Tecnologica de Pereira",
+    "body": "## Universidad Tecnologica de Pereira\n\n**Resumen:** Sistema educativo abierto y sociotecnico con multiple subsistemas academicos y administrativos.\n\n**Complejidad:** Complejo\n\n*Generado con TGS Mapper Agent*",
+    "target": "u_myusername"
+  }
+}
