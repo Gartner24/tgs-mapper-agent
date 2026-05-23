@@ -19,9 +19,9 @@ build/
 # Docker volumes / data
 n8n_data/
 
-# OpenClaw runtime state (config dir is a bind mount; keep only openclaw.json)
-openclaw/config/*
-!openclaw/config/openclaw.json
+# OpenClaw runtime state (bind-mounted dirs OpenClaw owns/writes at runtime)
+openclaw/config/
+openclaw/workspace/.openclaw/
 
 # Logs
 *.log

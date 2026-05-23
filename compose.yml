@@ -46,10 +46,9 @@ services:
     image: alpine/openclaw:2026.5.20
     container_name: tgs-openclaw
     env_file: .env
-    environment:
-      # Pure HTTP agent backend: do NOT let OpenClaw own the Telegram bot
-      # (its auto-enabled polling deletes n8n's webhook). n8n owns the bot.
-      - TELEGRAM_BOT_TOKEN=
+    # OpenClaw owns the single Telegram bot (inherits TELEGRAM_BOT_TOKEN from
+    # .env). n8n no longer uses a Telegram trigger; it serves the analysis
+    # webhook that OpenClaw calls.
     depends_on:
       crewai:
         condition: service_healthy
