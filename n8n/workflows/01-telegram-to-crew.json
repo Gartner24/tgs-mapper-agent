@@ -269,6 +269,7 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [3380, 400],
+      "continueOnFail": true,
       "credentials": {
         "telegramApi": {
           "id": "REPLACE_WITH_CREDENTIAL_ID",
