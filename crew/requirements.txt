@@ -11,6 +11,7 @@ python-multipart>=0.0.12
 # --- LLM via OpenRouter (OpenAI-compatible) ---
 litellm>=1.50.0
 openai>=1.50.0
+anthropic>=0.40.0
 
 # --- Document/media processing ---
 pypdf>=5.0.0
