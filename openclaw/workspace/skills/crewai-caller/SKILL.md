@@ -26,7 +26,7 @@ Construir el payload con jq para evitar inyeccion JSON:
   curl -s -X POST "${CREW_API_URL}/analyze" \
     -H "Content-Type: application/json" \
     -d "$PAYLOAD" \
-    --max-time 120
+    --max-time 600
 
 Validar que la respuesta contenga "ok":true y el campo "analysis".
 

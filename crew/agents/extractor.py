@@ -4,7 +4,12 @@ from config.llm import get_llm
 from tools import PdfReaderTool, ImageReaderTool, UrlFetcherTool
 
 
-def build_extractor_agent() -> Agent:
+def build_extractor_agent(input_type: str = "text") -> Agent:
+    tools = (
+        [PdfReaderTool(), ImageReaderTool(), UrlFetcherTool()]
+        if input_type in ("pdf", "image", "url")
+        else []
+    )
     return Agent(
         role="Extractor y comprensor de contenido",
         goal=(
@@ -19,8 +24,9 @@ def build_extractor_agent() -> Agent:
             "del contenido. Eres el sensor del sistema. Cuando el input es un PDF, una imagen o "
             "una URL, usas tus herramientas para obtener el texto primero."
         ),
-        tools=[PdfReaderTool(), ImageReaderTool(), UrlFetcherTool()],
+        tools=tools,
         llm=get_llm(),
         verbose=True,
         allow_delegation=False,
+        max_iter=5,
     )

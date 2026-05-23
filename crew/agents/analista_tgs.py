@@ -26,4 +26,5 @@ def build_analista_tgs_agent() -> Agent:
         llm=get_llm(),
         verbose=True,
         allow_delegation=False,
+        max_iter=5,
     )

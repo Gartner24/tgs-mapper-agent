@@ -157,7 +157,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ input_type: $json.input_type, content: $json.content, user_id: $json.chat_id }) }}",
-        "options": {"timeout": 120000}
+        "options": {"timeout": 600000}
       },
       "id": "node-analyze-binary",
       "name": "Analyze Binary",
@@ -172,7 +172,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ input_type: $json.input_type, content: $json.content, user_id: $json.chat_id }) }}",
-        "options": {"timeout": 120000}
+        "options": {"timeout": 600000}
       },
       "id": "node-analyze-text",
       "name": "Analyze Text",
@@ -275,6 +275,26 @@
           "name": "Telegram Bot"
         }
       }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chat_id }}",
+        "text": "Procesando tu analisis bajo el marco TGS. Esto puede tardar 1-2 minutos...",
+        "additionalFields": {}
+      },
+      "id": "node-send-ack",
+      "name": "Send Processing Ack",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [960, 600],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -289,7 +309,7 @@
       ]
     },
     "Detect Type": {
-      "main": [[{"node": "Web Research", "type": "main", "index": 0}]]
+      "main": [[{"node": "Web Research", "type": "main", "index": 0}, {"node": "Send Processing Ack", "type": "main", "index": 0}]]
     },
     "Web Research": {
       "main": [[{"node": "Merge Research", "type": "main", "index": 0}]]

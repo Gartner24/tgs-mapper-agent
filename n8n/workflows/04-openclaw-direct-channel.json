@@ -73,7 +73,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ tool: 'crewai-caller', args: { input_type: $json.input_type, content: $json.content, user_id: $json.user_id } }) }}",
-        "options": {"timeout": 150000}
+        "options": {"timeout": 600000}
       },
       "id": "node-call-openclaw",
       "name": "Call via OpenClaw",

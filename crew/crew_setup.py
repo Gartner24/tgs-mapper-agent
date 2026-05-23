@@ -18,7 +18,7 @@ from schemas.tgs_output import TGSAnalysis
 
 
 def build_crew(input_type: str, content: str) -> Crew:
-    extractor = build_extractor_agent()
+    extractor = build_extractor_agent(input_type=input_type)
     analista = build_analista_tgs_agent()
     diagramador = build_diagramador_agent()
     manager = build_manager_agent()
@@ -31,13 +31,12 @@ def build_crew(input_type: str, content: str) -> Crew:
         context=[t_extraction, t_analysis, t_diagram],
     )
 
-    logger.info(f"Assembling hierarchical Crew for input_type={input_type!r}")
+    logger.info(f"Assembling sequential Crew for input_type={input_type!r}")
 
     return Crew(
-        agents=[extractor, analista, diagramador],
+        agents=[extractor, analista, diagramador, manager],
         tasks=[t_extraction, t_analysis, t_diagram, t_coordination],
-        process=Process.hierarchical,
-        manager_agent=manager,
+        process=Process.sequential,
         verbose=True,
     )
 
