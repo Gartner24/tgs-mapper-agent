@@ -1,0 +1,247 @@
+{
+  "name": "01 - Telegram to CrewAI",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "node-tg-trigger-01",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [300, 300],
+      "webhookId": "tgs-webhook-01",
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": false, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "cond-publish",
+              "leftValue": "={{ $json.message?.text ?? '' }}",
+              "rightValue": "/publish",
+              "operator": {"type": "string", "operation": "startsWith"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-skip-publish",
+      "name": "Skip /publish",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $json.message;\nconst chatId = String(msg.chat.id);\nconst text = (msg.text || '').trim();\nconst urlRegex = /https?:\\/\\/[^\\s]+/;\n\nif (msg.document && msg.document.mime_type === 'application/pdf') {\n  return [{ json: { input_type: 'pdf', file_id: msg.document.file_id, chat_id: chatId, needs_download: true } }];\n}\nif (msg.photo && msg.photo.length > 0) {\n  const photo = msg.photo[msg.photo.length - 1];\n  return [{ json: { input_type: 'image', file_id: photo.file_id, chat_id: chatId, needs_download: true } }];\n}\nconst urlMatch = text.match(urlRegex);\nif (urlMatch) {\n  return [{ json: { input_type: 'url', content: urlMatch[0], chat_id: chatId, needs_download: false } }];\n}\nreturn [{ json: { input_type: 'text', content: text, chat_id: chatId, needs_download: false } }];"
+      },
+      "id": "node-detect-type",
+      "name": "Detect Type",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 420]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": false, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "cond-download",
+              "leftValue": "={{ $json.needs_download }}",
+              "rightValue": true,
+              "operator": {"type": "boolean", "operation": "equals"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-needs-download",
+      "name": "Needs Download",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 420]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/getFile",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "file_id", "value": "={{ $json.file_id }}"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-get-file",
+      "name": "Get Telegram File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1180, 220]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.telegram.org/file/bot{{ $env.TELEGRAM_BOT_TOKEN }}/{{ $json.result.file_path }}",
+        "options": {
+          "response": {
+            "response": {"responseFormat": "file"}
+          }
+        }
+      },
+      "id": "node-download-file",
+      "name": "Download File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1400, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "const binaryKey = Object.keys($binary)[0];\nconst buf = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nconst base64 = buf.toString('base64');\nconst prev = $('Detect Type').item.json;\nreturn [{ json: { input_type: prev.input_type, content: base64, chat_id: prev.chat_id } }];"
+      },
+      "id": "node-to-base64",
+      "name": "To Base64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1620, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://tgs-crewai:8000/analyze",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ input_type: $json.input_type, content: $json.content, user_id: $json.chat_id }) }}",
+        "options": {"timeout": 120000}
+      },
+      "id": "node-analyze-binary",
+      "name": "Analyze Binary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1840, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://tgs-crewai:8000/analyze",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ input_type: $json.input_type, content: $json.content, user_id: $json.chat_id }) }}",
+        "options": {"timeout": 120000}
+      },
+      "id": "node-analyze-text",
+      "name": "Analyze Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1180, 580]
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $json;\nconst chatId = $('Detect Type').item.json.chat_id;\n\nif (!resp.ok) {\n  return [{ json: { ok: false, chat_id: chatId, text: `Error en el analisis: ${resp.error}`, mermaid_url: null } }];\n}\n\n$workflow.staticData[chatId] = resp.analysis;\n\nconst mermaidEncoded = Buffer.from(resp.mermaid).toString('base64url');\nconst mermaidUrl = `https://mermaid.ink/img/${mermaidEncoded}`;\n\nreturn [{ json: { ok: true, chat_id: chatId, text: resp.markdown, mermaid_url: mermaidUrl } }];"
+      },
+      "id": "node-format-store",
+      "name": "Format and Store",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2060, 400]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {"parse_mode": "Markdown"}
+      },
+      "id": "node-send-text",
+      "name": "Send Analysis",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2280, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Format and Store').item.json.chat_id }}",
+        "photo": "={{ $('Format and Store').item.json.mermaid_url }}",
+        "additionalFields": {"caption": "Diagrama del sistema analizado"}
+      },
+      "id": "node-send-photo",
+      "name": "Send Diagram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2500, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{"node": "Skip /publish", "type": "main", "index": 0}]]
+    },
+    "Skip /publish": {
+      "main": [
+        [],
+        [{"node": "Detect Type", "type": "main", "index": 0}]
+      ]
+    },
+    "Detect Type": {
+      "main": [[{"node": "Needs Download", "type": "main", "index": 0}]]
+    },
+    "Needs Download": {
+      "main": [
+        [{"node": "Get Telegram File", "type": "main", "index": 0}],
+        [{"node": "Analyze Text", "type": "main", "index": 0}]
+      ]
+    },
+    "Get Telegram File": {
+      "main": [[{"node": "Download File", "type": "main", "index": 0}]]
+    },
+    "Download File": {
+      "main": [[{"node": "To Base64", "type": "main", "index": 0}]]
+    },
+    "To Base64": {
+      "main": [[{"node": "Analyze Binary", "type": "main", "index": 0}]]
+    },
+    "Analyze Binary": {
+      "main": [[{"node": "Format and Store", "type": "main", "index": 0}]]
+    },
+    "Analyze Text": {
+      "main": [[{"node": "Format and Store", "type": "main", "index": 0}]]
+    },
+    "Format and Store": {
+      "main": [[{"node": "Send Analysis", "type": "main", "index": 0}]]
+    },
+    "Send Analysis": {
+      "main": [[{"node": "Send Diagram", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "id": "tgs-workflow-01",
+  "meta": {"instanceId": "REPLACE_WITH_INSTANCE_ID"}
+}

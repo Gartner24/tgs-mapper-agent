@@ -1,0 +1,167 @@
+{
+  "name": "02 - OpenClaw Publish Reddit",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "node-tg-trigger-02",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [300, 300],
+      "webhookId": "tgs-webhook-02",
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": false, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "cond-is-publish",
+              "leftValue": "={{ $json.message?.text ?? '' }}",
+              "rightValue": "/publish",
+              "operator": {"type": "string", "operation": "startsWith"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-is-publish",
+      "name": "Is /publish",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatId = String($json.message.chat.id);\nconst analysis = $workflow.staticData[chatId];\n\nif (!analysis) {\n  return [{ json: { has_analysis: false, chat_id: chatId } }];\n}\n\nconst tema = analysis.tema || 'Analisis TGS';\nconst resumen = analysis.resumen || '';\nconst proposito = analysis.proposito || '';\nconst subsistemas = (analysis.subsistemas || []).map(s => `- **${s.nombre}**: ${s.proposito}`).join('\\n');\nconst complejidad = analysis.complejidad?.nivel || '';\nconst mermaidEncoded = Buffer.from(analysis.diagrama_mermaid || '').toString('base64url');\nconst mermaidUrl = `https://mermaid.ink/img/${mermaidEncoded}`;\n\nconst title = `[TGS] ${tema}`.slice(0, 300);\nconst body = `## ${tema}\\n\\n**Resumen:** ${resumen}\\n\\n**Proposito:** ${proposito}\\n\\n## Subsistemas\\n${subsistemas}\\n\\n**Complejidad:** ${complejidad}\\n\\n[Ver diagrama del sistema](${mermaidUrl})\\n\\n---\\n*Generado con TGS Mapper Agent*`;\n\nreturn [{ json: { has_analysis: true, chat_id: chatId, title, body, mermaid_url: mermaidUrl } }];"
+      },
+      "id": "node-retrieve-analysis",
+      "name": "Retrieve Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": false, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "cond-has-analysis",
+              "leftValue": "={{ $json.has_analysis }}",
+              "rightValue": true,
+              "operator": {"type": "boolean", "operation": "equals"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-has-analysis",
+      "name": "Has Analysis",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 180]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chat_id }}",
+        "text": "No tienes ningún análisis guardado. Envíame primero un texto, PDF, imagen o URL para analizar.",
+        "additionalFields": {}
+      },
+      "id": "node-no-analysis-msg",
+      "name": "No Analysis Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1180, 320],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.OPENCLAW_URL }}/publish",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "=Bearer {{ $env.OPENCLAW_API_KEY }}"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platform: 'reddit', target: $env.REDDIT_TARGET, title: $json.title, body: $json.body, media_url: $json.mermaid_url, credentials: { client_id: $env.REDDIT_CLIENT_ID, client_secret: $env.REDDIT_CLIENT_SECRET, username: $env.REDDIT_USERNAME, password: $env.REDDIT_PASSWORD } }) }}",
+        "options": {"timeout": 30000}
+      },
+      "id": "node-openclaw",
+      "name": "Publish to Reddit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1180, 80]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('Retrieve Analysis').item.json.chat_id }}",
+        "text": "={{ $json.ok ? `✅ Análisis publicado en Reddit:\\n${$json.post_url}` : `❌ Error al publicar: ${$json.error}` }}",
+        "additionalFields": {}
+      },
+      "id": "node-confirm",
+      "name": "Confirm Publication",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1400, 80],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{"node": "Is /publish", "type": "main", "index": 0}]]
+    },
+    "Is /publish": {
+      "main": [
+        [{"node": "Retrieve Analysis", "type": "main", "index": 0}],
+        []
+      ]
+    },
+    "Retrieve Analysis": {
+      "main": [[{"node": "Has Analysis", "type": "main", "index": 0}]]
+    },
+    "Has Analysis": {
+      "main": [
+        [{"node": "Publish to Reddit", "type": "main", "index": 0}],
+        [{"node": "No Analysis Message", "type": "main", "index": 0}]
+      ]
+    },
+    "Publish to Reddit": {
+      "main": [[{"node": "Confirm Publication", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "id": "tgs-workflow-02",
+  "meta": {"instanceId": "REPLACE_WITH_INSTANCE_ID"}
+}
