@@ -43,7 +43,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const msg = $json.message;\nconst chatId = String(msg.chat.id);\nconst text = (msg.text || '').trim();\nconst urlRegex = /https?:\\/\\/[^\\s]+/;\n\nif (msg.document && msg.document.mime_type === 'application/pdf') {\n  return [{ json: { input_type: 'pdf', file_id: msg.document.file_id, chat_id: chatId, needs_download: true, content: '' } }];\n}\nif (msg.photo && msg.photo.length > 0) {\n  const photo = msg.photo[msg.photo.length - 1];\n  return [{ json: { input_type: 'image', file_id: photo.file_id, chat_id: chatId, needs_download: true, content: '' } }];\n}\nconst urlMatch = text.match(urlRegex);\nif (urlMatch) {\n  return [{ json: { input_type: 'url', content: urlMatch[0], chat_id: chatId, needs_download: false } }];\n}\nreturn [{ json: { input_type: 'text', content: text, chat_id: chatId, needs_download: false } }];"
+        "jsCode": "const msg = $('Telegram Trigger').item.json.message;\nconst chatId = String(msg.chat.id);\nconst text = (msg.text || '').trim();\nconst urlRegex = /https?:\\/\\/[^\\s]+/;\n\nif (msg.document && msg.document.mime_type === 'application/pdf') {\n  return [{ json: { input_type: 'pdf', file_id: msg.document.file_id, chat_id: chatId, needs_download: true, content: '' } }];\n}\nif (msg.photo && msg.photo.length > 0) {\n  const photo = msg.photo[msg.photo.length - 1];\n  return [{ json: { input_type: 'image', file_id: photo.file_id, chat_id: chatId, needs_download: true, content: '' } }];\n}\nconst urlMatch = text.match(urlRegex);\nif (urlMatch) {\n  return [{ json: { input_type: 'url', content: urlMatch[0], chat_id: chatId, needs_download: false } }];\n}\nreturn [{ json: { input_type: 'text', content: text, chat_id: chatId, needs_download: false } }];"
       },
       "id": "node-detect-type",
       "name": "Detect Type",
@@ -182,7 +182,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const resp = $json;\nconst chatId = $('Detect Type').item.json.chat_id;\n\nif (!resp.ok) {\n  return [{ json: { ok: false, chat_id: chatId, text: `Error en el analisis: ${resp.error}`, mermaid_url: null, analysis: null } }];\n}\n\n$workflow.staticData[chatId] = resp.analysis;\n\nconst mermaidEncoded = Buffer.from(resp.mermaid).toString('base64url');\nconst mermaidUrl = `https://mermaid.ink/img/${mermaidEncoded}`;\n\nreturn [{ json: { ok: true, chat_id: chatId, text: resp.markdown, mermaid_url: mermaidUrl, analysis: resp.analysis } }];"
+        "jsCode": "const resp = $json;\nconst chatId = $('Detect Type').item.json.chat_id;\n\nif (!resp.ok) {\n  return [{ json: { ok: false, chat_id: chatId, text: `Error en el analisis: ${resp.error}`, mermaid_url: null, analysis: null } }];\n}\n\nconst staticData = $getWorkflowStaticData('global');\nstaticData[chatId] = resp.analysis;\n\nconst mermaidEncoded = Buffer.from(resp.mermaid).toString('base64url');\nconst mermaidUrl = `https://mermaid.ink/img/${mermaidEncoded}`;\n\nconst text = (resp.markdown || '').length > 4000 ? (resp.markdown.slice(0, 3950) + '\\n\\n...(analisis truncado; ver diagrama)') : (resp.markdown || '');\nreturn [{ json: { ok: true, chat_id: chatId, text: text, mermaid_url: mermaidUrl, analysis: resp.analysis } }];"
       },
       "id": "node-format-store",
       "name": "Format and Store",
@@ -242,7 +242,7 @@
         "operation": "sendMessage",
         "chatId": "={{ $('Format and Store').item.json.chat_id }}",
         "text": "={{ $('Format and Store').item.json.text }}",
-        "additionalFields": {"parse_mode": "Markdown"}
+        "additionalFields": {}
       },
       "id": "node-send-text",
       "name": "Send Analysis",
@@ -280,7 +280,7 @@
       "parameters": {
         "resource": "message",
         "operation": "sendMessage",
-        "chatId": "={{ $json.chat_id }}",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
         "text": "Procesando tu analisis bajo el marco TGS. Esto puede tardar 2-4 minutos...",
         "additionalFields": {}
       },
@@ -305,11 +305,14 @@
     "Skip /publish": {
       "main": [
         [],
-        [{"node": "Detect Type", "type": "main", "index": 0}]
+        [{"node": "Send Processing Ack", "type": "main", "index": 0}]
       ]
     },
     "Detect Type": {
-      "main": [[{"node": "Web Research", "type": "main", "index": 0}, {"node": "Send Processing Ack", "type": "main", "index": 0}]]
+      "main": [[{"node": "Web Research", "type": "main", "index": 0}]]
+    },
+    "Send Processing Ack": {
+      "main": [[{"node": "Detect Type", "type": "main", "index": 0}]]
     },
     "Web Research": {
       "main": [[{"node": "Merge Research", "type": "main", "index": 0}]]
@@ -352,7 +355,7 @@
     }
   },
   "active": false,
-  "settings": {"executionOrder": "v1"},
+  "settings": {"executionOrder": "v1", "saveDataSuccessExecution": "all", "saveDataErrorExecution": "all", "saveManualExecutions": true},
   "id": "tgs-workflow-01",
   "meta": {"instanceId": "REPLACE_WITH_INSTANCE_ID"}
 }
