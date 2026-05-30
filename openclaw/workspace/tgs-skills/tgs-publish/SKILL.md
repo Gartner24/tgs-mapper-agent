@@ -37,6 +37,8 @@ Reglas obligatorias:
 - El delimitador es `'TGS_PUBLISH_EOF'` con comillas simples.
 - Reemplaza `<<<...>>>` por el contenido real, sin las marcas.
 - Si no tienes la URL del diagrama, deja `/tmp/tgs-publish.url` vacio.
+- NO uses `node -e`, `python -c` ni `ruby -e`: el sandbox los bloquea
+  (`strictInlineEval`). Siempre invoca scripts por archivo.
 
 ### Paso 3 - Ejecuta el publicador
 

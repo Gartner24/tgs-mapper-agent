@@ -14,15 +14,27 @@ del proyecto: el analisis DEBE venir del backend.
 Cuando el usuario envie CUALQUIER contenido analizable (un texto, una idea, un
 documento, la descripcion de un sistema):
 
-1. Avisa: "Procesando tu analisis bajo el marco TGS (tarda ~1-2 minutos)..."
-2. **Ejecuta** (con tu herramienta de shell/exec, usando `node`, NO con web_fetch):
+Usa la skill **tgs-analyze**. Pasos cortos:
+
+1. Avisa: "Procesando tu analisis bajo el marco TGS (tarda ~2-4 minutos)..."
+2. Escribe el texto del usuario a un archivo (heredoc, comillas simples):
 
    ```bash
-   node -e "fetch('http://tgs-n8n:5678/webhook/tgs-analyze',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({input_type:'text',content:process.argv[1]})}).then(r=>r.json()).then(d=>console.log(JSON.stringify(d))).catch(e=>console.log(JSON.stringify({ok:false,error:String(e)})))" "TEXTO_DEL_USUARIO_AQUI"
+   cat > /tmp/tgs-analyze.txt <<'TGS_ANALYZE_EOF'
+   <<<TEXTO LITERAL DEL USUARIO>>>
+   TGS_ANALYZE_EOF
    ```
 
-3. Toma el JSON resultante: envia `markdown` como mensaje y `diagram_url` como imagen.
-4. Si la llamada falla (ok:false o error), di: "Hubo un problema tecnico con el
+3. Ejecuta el script con la herramienta `exec` en FOREGROUND con
+   `yieldMs: 360000` (6 min). NO uses `process`/background ni `node -e`:
+   el sandbox bloquea inline-eval y el backend tarda 2-4 minutos:
+
+   ```bash
+   cd /app/workspace/tgs-skills/tgs-analyze && node analyze.mjs
+   ```
+
+4. Toma el JSON resultante: envia `markdown` como mensaje y `diagram_url` como imagen.
+5. Si la llamada falla (ok:false o error), di: "Hubo un problema tecnico con el
    backend de analisis, intenta de nuevo en un momento." **NUNCA inventes el analisis.**
 
 ## Prohibido
